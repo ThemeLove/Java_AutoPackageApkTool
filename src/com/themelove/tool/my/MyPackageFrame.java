@@ -14,6 +14,8 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStreamReader;
 
+import javax.swing.BorderFactory;
+import javax.swing.ComboBoxEditor;
 import javax.swing.JButton;
 import javax.swing.JEditorPane;
 import javax.swing.JFileChooser;
@@ -32,30 +34,32 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.filechooser.FileFilter;
 import javax.swing.filechooser.FileNameExtensionFilter;
+import javax.swing.JComboBox;
+import javax.swing.border.TitledBorder;
+import javax.swing.UIManager;
 
 /**
  *	@author:qingshanliao
  *  @date  :2017年3月16日
  */
 public class MyPackageFrame extends JFrame {
-	private   final  String LINE_SEPRATOR=System.getProperty("line.seprator");
+	/**
+	 * 换行符
+	 */
+	private String LINE_SEPRATOR;
+	/**
+	 * 路径分割符
+	 */
+	private String FILE_SEPRATOR;
 	
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
 	/**
-	 * 游戏名称英文简写
-	 */
-	private JEditorPane gameNameEdit;
-	/**
 	 * 选择渠道按钮
 	 */
 	private JButton chooseChannelBtn;
-	/**
-	 * 渠道文件路径
-	 */
-	private JEditorPane channelsFilePath;
 	/**
 	 * 重置按钮
 	 */
@@ -73,13 +77,47 @@ public class MyPackageFrame extends JFrame {
 	 */
 	private JTextArea resultInfo;
 
+	/**
+	 * 当前项目的根目录
+	 */
+	private String BASE_PATH;
+	/**
+	 * 游戏根目录
+	 */
+	private String GAME_PATH;
+	private JComboBox packageMethod;
+	private JComboBox apktoolVersion;
+
 
 	/**
 	 * Create the frame.
 	 */
 	public MyPackageFrame() {
+		initData();
 		initView();
 		addListener();
+	}
+
+
+
+	/**
+	 * 初始化数据，路径什么的
+	 */
+	private void initData() {
+		FILE_SEPRATOR = System.getProperty("file.separator");
+		LINE_SEPRATOR=System.getProperty("line.seprator");
+		BASE_PATH = System.getProperty("user.dir");
+		GAME_PATH = BASE_PATH+FILE_SEPRATOR+"games";
+		initConfigGames();
+		
+	}
+
+
+	/**
+	 * 初始化所有已经配置的游戏
+	 */
+	private void initConfigGames() {
+		
 	}
 
 
@@ -93,36 +131,27 @@ public class MyPackageFrame extends JFrame {
 		setBounds(100, 100, 600, 460);
 		getContentPane().setLayout(null);
 		
-		gameNameEdit = new JEditorPane();
-		gameNameEdit.setBounds(175, 0, 171, 32);
-		getContentPane().add(gameNameEdit);
-		
-		JLabel label = new JLabel("输入游戏简称：");
-		label.setBounds(9, 11, 152, 18);
-		getContentPane().add(label);
-		
 		chooseChannelBtn = new JButton("选择渠道列表");
-		chooseChannelBtn.setBounds(0, 42, 154, 27);
+		chooseChannelBtn.setBounds(10, 83, 154, 27);
 		getContentPane().add(chooseChannelBtn);
-		
-		channelsFilePath = new JEditorPane();
-		channelsFilePath.setBounds(173, 37, 389, 32);
-		getContentPane().add(channelsFilePath);
 		
 //		显示将要打包的渠道
 		JScrollPane channelsScrollPane = new JScrollPane();
-		channelsScrollPane.setBounds(10, 82, 152, 214);
+		channelsScrollPane.setBounds(10, 120, 152, 176);
 		channelsInfo = new JTextArea();
-		channelsInfo.setBackground(new Color(0xffCCCCFF));
-		channelsScrollPane.add(channelsInfo);
+		channelsInfo.setForeground(Color.WHITE);
+		channelsInfo.setBackground(new Color(0xcccccc, false));
+		channelsScrollPane.setViewportView(channelsInfo);
 		getContentPane().add(channelsScrollPane);
 		
 //		动态显示打包过程
 		JScrollPane resultScrollPane = new JScrollPane();
-		resultScrollPane.setBounds(175, 82, 387, 214);
+		resultScrollPane.setBounds(172, 120, 387, 176);
 		resultInfo = new JTextArea();
-		resultInfo.setBackground(new Color(0xffFFFFCC));
-		resultScrollPane.add(resultInfo);
+		resultInfo.setForeground(Color.WHITE);
+		resultInfo.setBackground(new Color(0xccffcc));
+//		resultInfo.setBackground(new Color(0xcccccc, true));
+		resultScrollPane.setViewportView(resultInfo);
 		getContentPane().add(resultScrollPane);
 		
 		packageBtn = new JButton("打包");
@@ -141,16 +170,45 @@ public class MyPackageFrame extends JFrame {
 		resetBtn.setBounds(14, 352, 84, 48);
 		getContentPane().add(resetBtn);
 		
+		JComboBox comboBox = new JComboBox();
+//		设置标题
+		comboBox.setBorder(BorderFactory.createTitledBorder("请选择游戏"));
+//		设置为可编辑状态
+		comboBox.setEditable(true);
+		ComboBoxEditor editor = comboBox.getEditor();
+		comboBox.configureEditor(editor, "请选择游戏");
+		comboBox.setBounds(408, 10, 154, 48);
+		
+		getContentPane().add(comboBox);
+		
+		packageMethod = new JComboBox();
+		packageMethod.setEditable(true);
+		packageMethod.setBorder(BorderFactory.createTitledBorder("打包方式"));
+		packageMethod.setBounds(23, 10, 154, 48);
+		getContentPane().add(packageMethod);
+		
+		apktoolVersion = new JComboBox();
+		apktoolVersion.setEditable(true);
+		apktoolVersion.setBorder(BorderFactory.createTitledBorder("选择apktool版本"));
+		apktoolVersion.setBounds(212, 10, 154, 48);
+		getContentPane().add(apktoolVersion);
+		
 	}
 	
 	/**
 	 * 添加点击事件
 	 */
 	private void addListener() {
+		
+		
 		chooseChannelBtn.addActionListener(new ActionListener() {
 			
 			@Override
 			public void actionPerformed(ActionEvent e) {
+//				获取当前的游戏名
+				String trim = gameNameEdit.getText().trim();
+				
+				
 				// 弹出文件选择框
 				JFileChooser jFileChooser = new JFileChooser("");
 				
