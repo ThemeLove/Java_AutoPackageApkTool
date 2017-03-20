@@ -38,6 +38,10 @@ import javax.swing.JComboBox;
 import javax.swing.border.TitledBorder;
 import javax.swing.UIManager;
 
+import com.themelove.tool.gui.EditComboBox;
+import com.themelove.tool.gui.MyComboBoxModel;
+import com.themelove.tool.my.bean.PackageMethod;
+
 /**
  *	@author:qingshanliao
  *  @date  :2017年3月16日
@@ -85,7 +89,7 @@ public class MyPackageFrame extends JFrame {
 	 * 游戏根目录
 	 */
 	private String GAME_PATH;
-	private JComboBox packageMethod;
+	private EditComboBox<PackageMethod> packageMethod;
 	private JComboBox apktoolVersion;
 
 
@@ -181,9 +185,8 @@ public class MyPackageFrame extends JFrame {
 		
 		getContentPane().add(comboBox);
 		
-		packageMethod = new JComboBox();
-		packageMethod.setEditable(true);
-		packageMethod.setBorder(BorderFactory.createTitledBorder("打包方式"));
+		
+		packageMethod = new EditComboBox<PackageMethod>("打包方式","请选择打包方式",packageMethodItemListener);
 		packageMethod.setBounds(23, 10, 154, 48);
 		getContentPane().add(packageMethod);
 		
@@ -194,6 +197,16 @@ public class MyPackageFrame extends JFrame {
 		getContentPane().add(apktoolVersion);
 		
 	}
+	
+	private MyComboBoxModel.ComboBoxItemListener packageMethodItemListener=new MyComboBoxModel.ComboBoxItemListener(){
+
+		@Override
+		public <E> void OnComboBoxItemClickListener(E item) {
+			
+		}
+		
+	};
+	
 	
 	/**
 	 * 添加点击事件
