@@ -48,7 +48,8 @@ public class Game {
 	/**
 	 * 获取comboxItem的显示名字
 	 */
-	public String getShowName(){
+	@Override
+	public String toString() {
 		return name+"---("+fullName+")";
 	}
 }

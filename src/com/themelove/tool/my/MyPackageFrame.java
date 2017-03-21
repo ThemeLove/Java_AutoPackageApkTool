@@ -1,45 +1,25 @@
 package com.themelove.tool.my;
 
 import java.awt.Color;
-import java.awt.Component;
-import java.awt.EventQueue;
-import java.awt.SystemColor;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.List;
 
-import javax.swing.BorderFactory;
-import javax.swing.ComboBoxEditor;
 import javax.swing.JButton;
-import javax.swing.JEditorPane;
-import javax.swing.JFileChooser;
 import javax.swing.JFrame;
-import javax.swing.JMenu;
-import javax.swing.JMenuBar;
-import javax.swing.JMenuItem;
-import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
-import javax.swing.JPanel;
-import javax.swing.JLabel;
-import javax.swing.event.CaretEvent;
-import javax.swing.event.CaretListener;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
-import javax.swing.filechooser.FileFilter;
-import javax.swing.filechooser.FileNameExtensionFilter;
-import javax.swing.JComboBox;
-import javax.swing.border.TitledBorder;
-import javax.swing.UIManager;
 
-import com.themelove.tool.gui.EditComboBox;
-import com.themelove.tool.gui.MyComboBoxModel;
+import com.themelove.tool.gui.MyEditComboBox;
+import com.themelove.tool.my.bean.ApktoolVersion;
+import com.themelove.tool.my.bean.Game;
 import com.themelove.tool.my.bean.PackageMethod;
 
 /**
@@ -89,8 +69,36 @@ public class MyPackageFrame extends JFrame {
 	 * 游戏根目录
 	 */
 	private String GAME_PATH;
-	private EditComboBox<PackageMethod> packageMethod;
-	private JComboBox apktoolVersion;
+	
+	/**
+	 * 工具更目录
+	 */
+	private String TOOLS_PATH;
+	/**
+	 * apktool的根目录
+	 */
+	private String APKTOOL_PATH;
+	
+	private MyEditComboBox<PackageMethod> packageMethodComboBox;
+	private MyEditComboBox<ApktoolVersion> apktoolVersionComboBox;
+	private MyEditComboBox<Game> gameComboBox;
+	
+	private List<PackageMethod> packageMethodsList=new ArrayList<PackageMethod>();
+	private List<ApktoolVersion> apktoolVersionList=new ArrayList<ApktoolVersion>();
+	private List<Game> gameList=new ArrayList<Game>();
+	
+	/**
+	 * 当前选择的打包方式
+	 */
+	private PackageMethod currentPackageMethod;
+	/**
+	 * 当前选择的Apktool版本
+	 */
+	private ApktoolVersion currentApktoolVersion;
+	/**
+	 * 当前打包的游戏
+	 */
+	private Game		   currentGame;
 
 
 	/**
@@ -102,8 +110,6 @@ public class MyPackageFrame extends JFrame {
 		addListener();
 	}
 
-
-
 	/**
 	 * 初始化数据，路径什么的
 	 */
@@ -111,17 +117,69 @@ public class MyPackageFrame extends JFrame {
 		FILE_SEPRATOR = System.getProperty("file.separator");
 		LINE_SEPRATOR=System.getProperty("line.seprator");
 		BASE_PATH = System.getProperty("user.dir");
-		GAME_PATH = BASE_PATH+FILE_SEPRATOR+"games";
+		GAME_PATH = BASE_PATH+FILE_SEPRATOR+"autoPackage"+FILE_SEPRATOR+"games";
+		TOOLS_PATH=BASE_PATH+FILE_SEPRATOR+"autoPackage"+FILE_SEPRATOR+"tools";
+		System.out.println("basePath:"+BASE_PATH);
+		System.out.println("gamePath:"+GAME_PATH);
+		System.out.println("toolPath:"+TOOLS_PATH);
+		initPackageMethods();
+		initApktoolVersions();
 		initConfigGames();
-		
 	}
 
+
+	/**
+	 * 初始化支持的Apktool
+	 */
+	private void initApktoolVersions() {
+		File toolsFile = new File(TOOLS_PATH);
+		if (!toolsFile.exists()) toolsFile.mkdirs();
+//		TODO  没有时提示
+
+		File[] listFiles = toolsFile.listFiles(new java.io.FileFilter() {
+			@Override
+			public boolean accept(File pathname) {
+				if (pathname.isDirectory()&&pathname.getName().startsWith("apktool_")) {
+					return true;
+				}
+				return false;
+			}
+		});
+		
+		for (File file : listFiles) {
+			ApktoolVersion apktoolVersion= new ApktoolVersion();
+			apktoolVersion.setPath(file.getAbsolutePath());
+			apktoolVersion.setVersion(file.getName());
+			apktoolVersionList.add(apktoolVersion);
+		}
+	}
+
+	/**
+	 * 初始化支持的打包方式
+	 */
+	private void initPackageMethods() {
+		PackageMethod metaMethod = new PackageMethod();
+		metaMethod.setMethod(PackageMethod.METHOD_META);
+		metaMethod.setDesc("方式一：修改meta-data");
+		
+		PackageMethod assetMethod = new PackageMethod();
+		assetMethod.setMethod(PackageMethod.METHOD_ASSET);
+		assetMethod.setDesc("方式二：修改assets配置");
+		
+		PackageMethod quickMethod = new PackageMethod();
+		quickMethod.setMethod(PackageMethod.METHOD_QUICK);
+		quickMethod.setDesc("方式三：修改签名目录");
+		
+		packageMethodsList.add(metaMethod);
+		packageMethodsList.add(assetMethod);
+		packageMethodsList.add(quickMethod);
+	}
 
 	/**
 	 * 初始化所有已经配置的游戏
 	 */
 	private void initConfigGames() {
-		
+//		初始化
 	}
 
 
@@ -174,39 +232,80 @@ public class MyPackageFrame extends JFrame {
 		resetBtn.setBounds(14, 352, 84, 48);
 		getContentPane().add(resetBtn);
 		
-		JComboBox comboBox = new JComboBox();
-//		设置标题
-		comboBox.setBorder(BorderFactory.createTitledBorder("请选择游戏"));
-//		设置为可编辑状态
-		comboBox.setEditable(true);
-		ComboBoxEditor editor = comboBox.getEditor();
-		comboBox.configureEditor(editor, "请选择游戏");
-		comboBox.setBounds(408, 10, 154, 48);
+//		打包方式
+		packageMethodComboBox = new MyEditComboBox<PackageMethod>("打包方式","请选择打包方式", packageMethodItemListener);
+		packageMethodComboBox.setBounds(10, 10, 195, 48);
+		packageMethodComboBox.setVisible(true);
 		
-		getContentPane().add(comboBox);
-		
-		
-		packageMethod = new EditComboBox<PackageMethod>("打包方式","请选择打包方式",packageMethodItemListener);
-		packageMethod.setBounds(23, 10, 154, 48);
-		getContentPane().add(packageMethod);
-		
-		apktoolVersion = new JComboBox();
-		apktoolVersion.setEditable(true);
-		apktoolVersion.setBorder(BorderFactory.createTitledBorder("选择apktool版本"));
-		apktoolVersion.setBounds(212, 10, 154, 48);
-		getContentPane().add(apktoolVersion);
-		
+		packageMethodComboBox.updateComboBox(packageMethodsList);
+		getContentPane().add(packageMethodComboBox);
+//		apktool版本
+		apktoolVersionComboBox = new MyEditComboBox<ApktoolVersion>("选择apktool版本","请选择游戏",apktoolVersionItemListener);
+		apktoolVersionComboBox.setBounds(215, 10, 183, 48);
+		apktoolVersionComboBox.updateComboBox(apktoolVersionList);
+		getContentPane().add(apktoolVersionComboBox);
+//		选择游戏
+		gameComboBox = new MyEditComboBox<Game>("请选择游戏","请选择游戏",gameItemListener);
+		gameComboBox.setBounds(408, 10, 166, 48);
+		getContentPane().add(gameComboBox);
 	}
 	
-	private MyComboBoxModel.ComboBoxItemListener packageMethodItemListener=new MyComboBoxModel.ComboBoxItemListener(){
+	@SuppressWarnings({ "unchecked", "unchecked" })
+	private MyEditComboBox.OnComboBoxItemClickListener<PackageMethod> packageMethodItemListener=new MyEditComboBox.OnComboBoxItemClickListener<PackageMethod>(){
 
 		@Override
-		public <E> void OnComboBoxItemClickListener(E item) {
-			
+		public void OnItemClickListener(PackageMethod packageMethod) {
+			currentPackageMethod=packageMethod;
 		}
-		
+
+		@Override
+		public void OnEditInputListener(String inputText) {
+			ArrayList<PackageMethod> temp=new ArrayList<>();
+			for (PackageMethod packageMethod : packageMethodsList) {
+				if (packageMethod.getDesc().contains(inputText)) {
+					temp.add(packageMethod);
+				};
+			}
+			packageMethodComboBox.updateComboBox(temp);
+		}
 	};
 	
+	@SuppressWarnings({ "unchecked", "unchecked" })
+	private MyEditComboBox.OnComboBoxItemClickListener<ApktoolVersion> apktoolVersionItemListener=new MyEditComboBox.OnComboBoxItemClickListener<ApktoolVersion>(){
+
+		@Override
+		public void OnItemClickListener(ApktoolVersion apktoolVersion) {
+			currentApktoolVersion=apktoolVersion;
+			
+		}
+
+		@Override
+		public void OnEditInputListener(String inputText) {
+			ArrayList<ApktoolVersion> temp=new ArrayList<ApktoolVersion>();
+			for (ApktoolVersion apktoolVersion : apktoolVersionList) {
+				String version = apktoolVersion.getVersion();
+				if (version.contains(inputText)) {
+					temp.add(apktoolVersion);
+				}
+			}
+			apktoolVersionComboBox.updateComboBox(temp);
+		}
+
+	
+	};
+	@SuppressWarnings({ "unchecked", "unchecked" })
+	private MyEditComboBox.OnComboBoxItemClickListener<Game> gameItemListener=new MyEditComboBox.OnComboBoxItemClickListener<Game>(){
+
+		public void OnItemClickListener(Game game) {
+			currentGame=game;
+		}
+
+		@Override
+		public void OnEditInputListener(String inputText) {
+			
+		}
+	};
+
 	
 	/**
 	 * 添加点击事件
@@ -214,7 +313,7 @@ public class MyPackageFrame extends JFrame {
 	private void addListener() {
 		
 		
-		chooseChannelBtn.addActionListener(new ActionListener() {
+		/*chooseChannelBtn.addActionListener(new ActionListener() {
 			
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -263,7 +362,7 @@ public class MyPackageFrame extends JFrame {
 							});
 			}
 			
-		});
+		});*/
 		
 		channelsInfo.getDocument().addDocumentListener(new DocumentListener() {
 			
@@ -300,8 +399,8 @@ public class MyPackageFrame extends JFrame {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				// 情况游戏名，渠道列表,resultInfo
-				gameNameEdit.setText("");
-				channelsFilePath.setText("");
+/*				gameNameEdit.setText("");
+				channelsFilePath.setText("");*/
 				channelsInfo.setText("");
 				resultInfo.setText("");
 			}

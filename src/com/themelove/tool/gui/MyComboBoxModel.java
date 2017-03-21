@@ -9,9 +9,11 @@ import javax.tools.JavaCompiler;
  * @author:lqs
  * date	  :2017年3月20日
  */
+@SuppressWarnings("serial")
 public class MyComboBoxModel<E> extends DefaultComboBoxModel{
 	private ComboBoxItemListener mItemClickListener;
 
+	@SuppressWarnings("unchecked")
 	public void setComboBoxItems(List<E> items){
 		removeAllElements();
 		for (Object object : items) {
