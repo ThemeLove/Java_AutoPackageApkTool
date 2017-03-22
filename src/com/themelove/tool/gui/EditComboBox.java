@@ -30,7 +30,7 @@ public class EditComboBox <E> extends JComboBox<E>{
 	private void initView() {
 		setEditable(true);
 		setBorder(BorderFactory.createTitledBorder(titleBorder));
-		configureEditor(getEditor(), hintMessage);
+//		configureEditor(getEditor(), hintMessage);
 		updateComboBox(items);
 	}
 	
