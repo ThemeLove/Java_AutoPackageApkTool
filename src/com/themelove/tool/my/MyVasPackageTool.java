@@ -4,7 +4,7 @@ import java.awt.EventQueue;
 
 
 /**
- * Android多渠道一键打包工具
+ * Android鎵撳寘宸ュ叿
  * @author qingshanliao
  */
 public class MyVasPackageTool {

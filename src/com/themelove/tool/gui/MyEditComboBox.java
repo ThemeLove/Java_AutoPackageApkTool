@@ -26,6 +26,8 @@ public class  MyEditComboBox <E> extends JComboBox<E>{
 		this.mTitleBorder=titleBorder;
 		this.mHintMessage=hintMessage;
 		this.mListener=listener;
+//		设置默认不选中第一项
+		setSelectedIndex(-1);
 		setBorder(BorderFactory.createTitledBorder(mTitleBorder));
 		setEditable(true);
 		configureEditor(getEditor(), mHintMessage);
@@ -83,7 +85,6 @@ public class  MyEditComboBox <E> extends JComboBox<E>{
 		for (E e : itemDatas) {
 			addItem(e);
 		}
-		
 	}
 	
 	public   interface  OnComboBoxItemClickListener<E>{
