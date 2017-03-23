@@ -104,6 +104,7 @@ public class  MyEditComboBox <E> extends JComboBox<E>{
 		this.mTitleBorder=titleBorder;
 		this.mHintMessage=hintMessage;
 		this.mListener=listener;
+
 		mEditor = getEditor();
 		mEditText = (JTextField) mEditor.getEditorComponent();
 		initView();
@@ -155,8 +156,4 @@ public class  MyEditComboBox <E> extends JComboBox<E>{
 		  void OnItemClickListener(E e);
 		  void OnEditInputListener(String inputText);
 	}
-	
-	
-
-	
 }

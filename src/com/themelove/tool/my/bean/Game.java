@@ -14,6 +14,11 @@ public class Game {
 	private String fullName;
 	
 	/**
+	 * 游戏根目录
+	 */
+	private String gamePath;
+	
+	/**
 	 * 获取首字母简写英文名
 	 * @return
 	 */
@@ -38,6 +43,22 @@ public class Game {
 	}
 
 	/**
+	 * 获取游戏根目录
+	 * @return
+	 */
+	public String getGamePath() {
+		return gamePath;
+	}
+
+	/**
+	 * 设置游戏根目录
+	 * @param gamePath
+	 */
+	public void setGamePath(String gamePath) {
+		this.gamePath = gamePath;
+	}
+
+	/**
 	 * 设置中文名全称
 	 * @param fullname
 	 */
@@ -50,6 +71,7 @@ public class Game {
 	 */
 	@Override
 	public String toString() {
+		if (fullName==null) fullName="";
 		return name+"---("+fullName+")";
 	}
 }
