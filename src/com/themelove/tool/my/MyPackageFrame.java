@@ -115,7 +115,7 @@ public class MyPackageFrame extends JFrame {
 	 */
 	private void initData() {
 		FILE_SEPRATOR = System.getProperty("file.separator");
-		LINE_SEPRATOR=System.getProperty("line.seprator");
+		LINE_SEPRATOR=System.getProperty("line.separator");
 		BASE_PATH = System.getProperty("user.dir");
 		GAME_PATH = BASE_PATH+FILE_SEPRATOR+"autoPackage"+FILE_SEPRATOR+"games";
 		TOOLS_PATH=BASE_PATH+FILE_SEPRATOR+"autoPackage"+FILE_SEPRATOR+"tools";
@@ -260,11 +260,15 @@ public class MyPackageFrame extends JFrame {
 
 		@Override
 		public void OnEditInputListener(String inputText) {
-			ArrayList<PackageMethod> temp=new ArrayList<>();
-			for (PackageMethod packageMethod : packageMethodsList) {
-				if (packageMethod.getDesc().contains(inputText)) {
-					temp.add(packageMethod);
-				};
+			List<PackageMethod> temp=new ArrayList<>();
+			if (inputText.isEmpty()) {
+				temp=packageMethodsList;
+			}else{
+				for (PackageMethod packageMethod : packageMethodsList) {
+					if (packageMethod.getDesc().contains(inputText)) {
+						temp.add(packageMethod);
+					};
+				}
 			}
 			packageMethodComboBox.updateComboBox(temp);
 		}
@@ -281,17 +285,21 @@ public class MyPackageFrame extends JFrame {
 
 		@Override
 		public void OnEditInputListener(String inputText) {
-			ArrayList<ApktoolVersion> temp=new ArrayList<ApktoolVersion>();
-			for (ApktoolVersion apktoolVersion : apktoolVersionList) {
-				String version = apktoolVersion.getVersion();
-				if (version.contains(inputText)) {
-					temp.add(apktoolVersion);
+			List<ApktoolVersion> temp=new ArrayList<ApktoolVersion>();
+			if (inputText.isEmpty()) {
+				System.out.println("回调：apktoolVersion		OnEditInputListener------"+"empty");
+				temp=apktoolVersionList;
+			}else{
+				for (ApktoolVersion apktoolVersion : apktoolVersionList) {
+					String version = apktoolVersion.getVersion();
+					if (version.contains(inputText)) {
+						temp.add(apktoolVersion);
+					}
 				}
 			}
+			System.out.println("回调：apktoolVersion   OnEditInputListener-----"+LINE_SEPRATOR+temp.toString());
 			apktoolVersionComboBox.updateComboBox(temp);
 		}
-
-	
 	};
 	@SuppressWarnings({ "unchecked", "unchecked" })
 	private MyEditComboBox.OnComboBoxItemClickListener<Game> gameItemListener=new MyEditComboBox.OnComboBoxItemClickListener<Game>(){
