@@ -5,7 +5,9 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileFilter;
 import java.io.FileInputStream;
+import java.io.FilenameFilter;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
@@ -21,6 +23,8 @@ import com.themelove.tool.gui.MyEditComboBox;
 import com.themelove.tool.my.bean.ApktoolVersion;
 import com.themelove.tool.my.bean.Game;
 import com.themelove.tool.my.bean.PackageMethod;
+import com.themelove.tool.util.CmdUtil;
+import com.themelove.tool.util.FileUtil;
 
 /**
  *	@author:qingshanliao
@@ -68,16 +72,33 @@ public class MyPackageFrame extends JFrame {
 	/**
 	 * 游戏根目录
 	 */
-	private String GAME_PATH;
+	private String BASE_GAME_PATH;
 	
 	/**
-	 * 工具更目录
+	 * 工具根目录
 	 */
-	private String TOOLS_PATH;
+	private String BASE_TOOLS_PATH;
 	/**
-	 * apktool的根目录
+	 * apktool根目录
 	 */
 	private String APKTOOL_PATH;
+	
+	/**
+	 * work根目录
+	 */
+	private String BASE_WORK_PATH;
+	/**
+	 * bak目录，用来存放母包反编译或解压生成的文件
+	 */
+	private String BAK_PATH;
+	/**
+	 * 多渠道打包的临时目录
+	 */
+	private String TEMP_PATH;
+	/**
+	 * 渠道包输出根目录
+	 */
+	private String BASE_OUT_PATH;
 	
 	private MyEditComboBox<PackageMethod> packageMethodComboBox;
 	private MyEditComboBox<ApktoolVersion> apktoolVersionComboBox;
@@ -117,11 +138,15 @@ public class MyPackageFrame extends JFrame {
 		FILE_SEPRATOR = System.getProperty("file.separator");
 		LINE_SEPRATOR=System.getProperty("line.separator");
 		BASE_PATH = System.getProperty("user.dir");
-		GAME_PATH = BASE_PATH+FILE_SEPRATOR+"autoPackage"+FILE_SEPRATOR+"games";
-		TOOLS_PATH=BASE_PATH+FILE_SEPRATOR+"autoPackage"+FILE_SEPRATOR+"tools";
+		BASE_GAME_PATH = BASE_PATH+FILE_SEPRATOR+"autoPackage"+FILE_SEPRATOR+"games";
+		BASE_TOOLS_PATH=BASE_PATH+FILE_SEPRATOR+"autoPackage"+FILE_SEPRATOR+"tools";
+		BASE_WORK_PATH = BASE_PATH+FILE_SEPRATOR+"autoPackage"+FILE_SEPRATOR+"work";
+		BAK_PATH = BASE_WORK_PATH+FILE_SEPRATOR+"bak";
+		TEMP_PATH = BASE_WORK_PATH+FILE_SEPRATOR+"temp";
+		BASE_OUT_PATH=BASE_PATH+FILE_SEPRATOR+"work";
 		System.out.println("basePath:"+BASE_PATH);
-		System.out.println("gamePath:"+GAME_PATH);
-		System.out.println("toolPath:"+TOOLS_PATH);
+		System.out.println("gamePath:"+BASE_GAME_PATH);
+		System.out.println("toolPath:"+BASE_TOOLS_PATH);
 		initPackageMethods();
 		initApktoolVersions();
 		initConfigGames();
@@ -132,7 +157,7 @@ public class MyPackageFrame extends JFrame {
 	 * 初始化支持的Apktool
 	 */
 	private void initApktoolVersions() {
-		File toolsFile = new File(TOOLS_PATH);
+		File toolsFile = new File(BASE_TOOLS_PATH);
 		if (!toolsFile.exists()) toolsFile.mkdirs();
 //		TODO  没有时提示
 
@@ -180,9 +205,27 @@ public class MyPackageFrame extends JFrame {
 	 */
 	private void initConfigGames() {
 //		初始化
+		File baseGameFile = new File(BASE_GAME_PATH);
+		if (!baseGameFile.exists()) baseGameFile.mkdirs();
+//		提示
+		File[] games = baseGameFile.listFiles(new FileFilter() {
+			
+			@Override
+			public boolean accept(File pathname) {
+				if (pathname.isDirectory()) {
+					return true;
+				}
+				return false;
+			}
+		});
+		
+		for (File gameFile : games) {
+			Game game = new Game();
+			game.setName(gameFile.getName());
+			game.setGamePath(gameFile.getAbsolutePath());
+			gameList.add(game);
+		}
 	}
-
-
 
 	/**
 	 * 初始化UI视图
@@ -201,7 +244,7 @@ public class MyPackageFrame extends JFrame {
 		JScrollPane channelsScrollPane = new JScrollPane();
 		channelsScrollPane.setBounds(10, 120, 152, 176);
 		channelsInfo = new JTextArea();
-		channelsInfo.setForeground(Color.WHITE);
+		channelsInfo.setForeground(Color.BLUE);
 		channelsInfo.setBackground(new Color(0xcccccc, false));
 		channelsScrollPane.setViewportView(channelsInfo);
 		getContentPane().add(channelsScrollPane);
@@ -247,6 +290,7 @@ public class MyPackageFrame extends JFrame {
 //		选择游戏
 		gameComboBox = new MyEditComboBox<Game>("请选择游戏","请选择游戏",gameItemListener);
 		gameComboBox.setBounds(408, 10, 166, 48);
+		gameComboBox.updateComboBox(gameList);
 		getContentPane().add(gameComboBox);
 	}
 	
@@ -305,7 +349,24 @@ public class MyPackageFrame extends JFrame {
 	private MyEditComboBox.OnComboBoxItemClickListener<Game> gameItemListener=new MyEditComboBox.OnComboBoxItemClickListener<Game>(){
 
 		public void OnItemClickListener(Game game) {
+			channelsInfo.setText("");
+			System.out.println("回调：game		OnItemClickListener------"+game.toString());
 			currentGame=game;
+//			生成对应游戏要打的渠道包
+			File channelFile = new File(game.getGamePath()+FILE_SEPRATOR+"channel"+FILE_SEPRATOR+"channel.txt");
+			if (channelFile.exists()){
+				List<String> gameChannels= getChannelsFormFile(channelFile);
+				if (gameChannels!=null) {
+					StringBuffer info=new StringBuffer();
+					for (String channel : gameChannels) {
+						if (channel.isEmpty()) continue;
+						info.append(channel).append(LINE_SEPRATOR);
+					}
+					channelsInfo.setText(info.toString());
+				}
+			}else{
+				System.out.println("游戏:-----"+game.getName()+"----渠道文件不存在");
+			}
 		}
 
 		@Override
@@ -313,7 +374,6 @@ public class MyPackageFrame extends JFrame {
 			
 		}
 	};
-
 	
 	/**
 	 * 添加点击事件
@@ -377,19 +437,21 @@ public class MyPackageFrame extends JFrame {
 			@Override
 			public void removeUpdate(DocumentEvent e) {
 				// 删除时的监听
-				
+				// 内容变化时的监听
+				packageBtn.setEnabled(e.getLength()==0);
 			}
 			
 			@Override
 			public void insertUpdate(DocumentEvent e) {
 				// 插入时的监听
-				
+				// 内容变化时的监听
+				packageBtn.setEnabled(e.getLength()==0);
 			}
 			
 			@Override
 			public void changedUpdate(DocumentEvent e) {
-				// 内容变化时的监听
-					packageBtn.setEnabled(e.getLength()==0);
+				// 内容变化时的监听,一般用不到
+//					packageBtn.setEnabled(e.getLength()==0);
 			}
 		});
 		
@@ -397,8 +459,9 @@ public class MyPackageFrame extends JFrame {
 			
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				// 开始打包过程
-				
+
+//				真正多渠道打包
+				autoPackageChannels();
 			}
 		});
 		
@@ -416,20 +479,21 @@ public class MyPackageFrame extends JFrame {
 	}
 
 
-
 	/**
 	 * 从文件中解析渠道列表
 	 * @param selectedFile
 	 */
 	@SuppressWarnings("resource")
-	protected String[] getChannelsFormFile(File file) {
-		String[] channels=new String[]{};
+	protected List<String> getChannelsFormFile(File file) {
+		ArrayList<String> channels=new ArrayList<String>();
 		try {
 			InputStreamReader inputStreamReader = new InputStreamReader(new FileInputStream(file));
 			BufferedReader br = new BufferedReader(inputStreamReader);
 			String line=null;
-			for (int i = 0; (line=br.readLine().trim())!=null; i++) {
-				channels[i]=line;
+			while ((line=br.readLine())!=null) {
+				String channel = line.trim();
+				if (channel.isEmpty()) continue;
+				channels.add(channel);
 			}
 			return channels;
 		} catch (Exception e) {
@@ -437,4 +501,39 @@ public class MyPackageFrame extends JFrame {
 		}
 		return null;
 	}
+	
+	protected void autoPackageChannels() {
+		// TODO Auto-generated method stub
+//		1.检查母包是否存在
+		File apkFile = new File(currentGame.getGamePath()+FILE_SEPRATOR+"apk"+FILE_SEPRATOR+currentGame.getName()+".apk");
+		if (!apkFile.exists()) System.out.println("游戏---"+currentGame.getName()+"---母包不存在");
+//		2.清空打包过程中用到的目录
+		File bakDir = new File(BAK_PATH);
+		File tempDir = new File(TEMP_PATH);
+		File gameOutDir = new File(BASE_OUT_PATH+FILE_SEPRATOR+currentGame.getName());
+		
+		boolean deleteBakDir = FileUtil.deleteFiles(bakDir);
+		if (deleteBakDir) System.out.println("清空bak目录成功...");
+		boolean deleteTemDir = FileUtil.deleteFiles(tempDir);
+		if (deleteTemDir) System.out.println("清空temp目录成功...");
+		boolean deleteGameOutDir = FileUtil.deleteFiles(gameOutDir);
+		if (deleteGameOutDir) System.out.println("清空---"+currentGame.getName()+"---out目录成功...");
+			
+//		3.根据打包方式，反编译或者解压母包到bak目录
+		switch (currentPackageMethod.getMethod()) {
+		case PackageMethod.METHOD_META://修改AndroidManifest.xml中meta方式要用apktool反编译到bak目录
+			
+			
+			break;
+		case PackageMethod.METHOD_ASSET://修改asset目录中的配置文件和META-INFO文件方式不用反编译，只需解压即可，省去反编译的步骤，加快速度。
+		case PackageMethod.METHOD_QUICK:
+			
+			
+			break;
+		default:
+			break;
+		}
+	}
+	
+	
 }

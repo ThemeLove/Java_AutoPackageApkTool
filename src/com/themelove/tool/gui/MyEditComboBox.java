@@ -154,8 +154,4 @@ public class  MyEditComboBox <E> extends JComboBox<E>{
 		  void OnItemClickListener(E e);
 		  void OnEditInputListener(String inputText);
 	}
-	
-	
-
-	
 }
