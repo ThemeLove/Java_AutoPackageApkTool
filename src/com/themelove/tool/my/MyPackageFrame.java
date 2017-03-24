@@ -528,7 +528,6 @@ public class MyPackageFrame extends JFrame {
 		case PackageMethod.METHOD_ASSET://修改asset目录中的配置文件和META-INFO文件方式不用反编译，只需解压即可，省去反编译的步骤，加快速度。
 		case PackageMethod.METHOD_QUICK:
 			
-			
 			break;
 		default:
 			break;
