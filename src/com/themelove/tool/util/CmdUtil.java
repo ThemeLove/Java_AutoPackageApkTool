@@ -13,13 +13,22 @@ public class CmdUtil {
 	/**
 	 * 执行命令
 	 */
-	public static void exeCmd(String command,String[] envp,File file){
+	public static Process exeCmd(String command,String[] envp,File file){
 		try {
-			Runtime.getRuntime().exec(command, envp, file);
+			return Runtime.getRuntime().exec(command, envp, file);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		
+		return null;
 	}
 	
+	
+	public static Process exeCmd(String command){
+		try {
+			return Runtime.getRuntime().exec(command);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
 }

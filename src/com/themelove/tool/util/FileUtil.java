@@ -73,9 +73,14 @@ public class FileUtil {
 				if (file.isDirectory()) {
 					boolean deleteFilesFlag = deleteFiles(file);
 					if (!deleteFilesFlag) return false;
+//					清空文件夹里的内容成功之后，再将文件夹目录删除
+					boolean deleteDir = file.delete();
+					if (!deleteDir) return false;
+//					System.out.println("清空目录---"+file.getName()+"---成功");
 				}else{
 					boolean deleteFileFlag = deleteFile(file);
 					if (!deleteFileFlag)  return false;
+//					System.out.println("清空文件---"+file.getName()+"---成功");
 				}
 			}
 		}

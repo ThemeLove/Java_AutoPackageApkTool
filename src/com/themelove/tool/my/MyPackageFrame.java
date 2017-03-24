@@ -25,6 +25,7 @@ import com.themelove.tool.my.bean.Game;
 import com.themelove.tool.my.bean.PackageMethod;
 import com.themelove.tool.util.CmdUtil;
 import com.themelove.tool.util.FileUtil;
+import com.themelove.tool.util.TextUtil;
 
 /**
  *	@author:qingshanliao
@@ -141,9 +142,9 @@ public class MyPackageFrame extends JFrame {
 		BASE_GAME_PATH = BASE_PATH+FILE_SEPRATOR+"autoPackage"+FILE_SEPRATOR+"games";
 		BASE_TOOLS_PATH=BASE_PATH+FILE_SEPRATOR+"autoPackage"+FILE_SEPRATOR+"tools";
 		BASE_WORK_PATH = BASE_PATH+FILE_SEPRATOR+"autoPackage"+FILE_SEPRATOR+"work";
+		BASE_OUT_PATH=BASE_PATH+FILE_SEPRATOR+"work";
 		BAK_PATH = BASE_WORK_PATH+FILE_SEPRATOR+"bak";
 		TEMP_PATH = BASE_WORK_PATH+FILE_SEPRATOR+"temp";
-		BASE_OUT_PATH=BASE_PATH+FILE_SEPRATOR+"work";
 		System.out.println("basePath:"+BASE_PATH);
 		System.out.println("gamePath:"+BASE_GAME_PATH);
 		System.out.println("toolPath:"+BASE_TOOLS_PATH);
@@ -438,14 +439,14 @@ public class MyPackageFrame extends JFrame {
 			public void removeUpdate(DocumentEvent e) {
 				// 删除时的监听
 				// 内容变化时的监听
-				packageBtn.setEnabled(e.getLength()==0);
+				packageBtn.setEnabled(!(e.getLength()==0));
 			}
 			
 			@Override
 			public void insertUpdate(DocumentEvent e) {
 				// 插入时的监听
 				// 内容变化时的监听
-				packageBtn.setEnabled(e.getLength()==0);
+				packageBtn.setEnabled(!(e.getLength()==0));
 			}
 			
 			@Override
@@ -519,15 +520,36 @@ public class MyPackageFrame extends JFrame {
 		boolean deleteGameOutDir = FileUtil.deleteFiles(gameOutDir);
 		if (deleteGameOutDir) System.out.println("清空---"+currentGame.getName()+"---out目录成功...");
 			
+//		母包路径
+		String gameApkPath=BASE_GAME_PATH+FILE_SEPRATOR+currentGame.getName()+FILE_SEPRATOR+"apk"+FILE_SEPRATOR+currentGame.getName()+".apk";
+		
 //		3.根据打包方式，反编译或者解压母包到bak目录
 		switch (currentPackageMethod.getMethod()) {
 		case PackageMethod.METHOD_META://修改AndroidManifest.xml中meta方式要用apktool反编译到bak目录
-			
-			
+
 			break;
 		case PackageMethod.METHOD_ASSET://修改asset目录中的配置文件和META-INFO文件方式不用反编译，只需解压即可，省去反编译的步骤，加快速度。
 		case PackageMethod.METHOD_QUICK:
-			
+
+//			File zipFile = new File(BASE_TOOLS_PATH+FILE_SEPRATOR+"7zip");
+			File zipFile = new File("E:/softwore/7zip");
+			if(!zipFile.exists()){
+				System.out.println("压缩工具不存在，请检查目录：");
+				return ;
+			}
+
+//			7z x "d:\File.7z" -y -aos -o"d:\Mydir"
+			String zipCommand = TextUtil.formatString("7z x \"%s\" -y -aos -o\"%s\" ",new String[]{gameApkPath,BAK_PATH});
+			System.out.println("zipCommand---"+zipCommand);
+//			Process process = CmdUtil.exeCmd("cmd.exe /c start "+zipCommand, null, zipFile);
+			Process process = CmdUtil.exeCmd(zipCommand, null, zipFile);
+/*			try {
+				process.waitFor();
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}*/
+			System.out.println("解压母包："+currentGame.getName()+".apk---到--->"+BAK_PATH+"---成功！");
 			break;
 		default:
 			break;

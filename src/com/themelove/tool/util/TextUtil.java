@@ -16,7 +16,7 @@ public class TextUtil {
 	 * @param args
 	 * @return
 	 */
-	public static String formatString(String format,Object... args){
+	public static String formatString(String format,String... args){
 		return String.format(Locale.getDefault(), format, args);
 	}
 }
