@@ -1,7 +1,15 @@
 package com.themelove.tool.util;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+
+import com.themelove.tool.my.thread.StreamThread;
 
 /**
  * 	cmd相关
@@ -9,26 +17,86 @@ import java.io.IOException;
  *  @date  :2017年3月23日
  */
 public class CmdUtil {
+
 	
 	/**
-	 * 执行命令
+	 * 执行命名并输出执行过程到控制台
+	 * @param command
 	 */
-	public static Process exeCmd(String command,String[] envp,File file){
+	public static void exeCmdWithLog(String command){
 		try {
-			return Runtime.getRuntime().exec(command, envp, file);
-		} catch (IOException e) {
+			Process process = Runtime.getRuntime().exec(command);
+			StreamThread inputThread = new StreamThread(process.getInputStream());
+			inputThread.start();
+			StreamThread errorThread = new StreamThread(process.getErrorStream());
+			errorThread.start();
+			process.waitFor();
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		return null;
+	}
+	
+	/**
+	 * 执行命令并输出执行过程到控制台和指定log文件
+	 * @param command
+	 * @param logtxt
+	 */
+	@SuppressWarnings("resource")
+	public static void exeCmdWithLogFile(String command,File logtxt){
+		try {
+			FileOutputStream logFos = new FileOutputStream(logtxt);
+			Process process = Runtime.getRuntime().exec(command);
+			StreamThread inputThread = new StreamThread(process.getInputStream(),logFos);
+			inputThread.start();
+			StreamThread errorThread = new StreamThread(process.getErrorStream(),logFos);
+			errorThread.start();
+			process.waitFor();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 	
 	
-	public static Process exeCmd(String command){
+	/**
+	 * 执行命令并输出执行过程到控制台
+	 * @param command
+	 * @param envp
+	 * @param file
+	 * @return
+	 */
+	public static void exeCmdWithLog(String command,String[] envp,File file){
 		try {
-			return Runtime.getRuntime().exec(command);
-		} catch (IOException e) {
+			Process process = Runtime.getRuntime().exec(command, envp, file);
+			StreamThread inputThread = new StreamThread(process.getInputStream());
+			inputThread.start();
+			StreamThread errorThread = new StreamThread(process.getErrorStream());
+			errorThread.start();
+			process.waitFor();
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		return null;
+	}
+	
+	/**
+	 * 执行命令并输出执行过程到控制台和指定log文件
+	 * @param command
+	 * @param envp
+	 * @param file
+	 * @param logtxt
+	 */
+	@SuppressWarnings("resource")
+	public static void exeCmdWithLogFile(String command,String[] envp,File file,File logtxt){
+		try {
+			FileOutputStream logFos = new FileOutputStream(logtxt);
+			
+			Process process = Runtime.getRuntime().exec(command, envp, file);
+			StreamThread inputThread = new StreamThread(process.getInputStream(),logFos);
+			inputThread.start();
+			StreamThread errorThread = new StreamThread(process.getErrorStream(),logFos);
+			errorThread.start();
+			process.waitFor();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 }

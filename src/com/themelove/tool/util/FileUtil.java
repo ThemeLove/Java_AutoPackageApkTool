@@ -7,6 +7,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Arrays;
 
 /**
  *  File相关工具类
@@ -95,27 +96,28 @@ public class FileUtil {
 	 */
 	public static boolean copyDir(File sourceDir,File targetDir){
 		if (!sourceDir.exists()) return false;
-		if (!targetDir.exists()) targetDir.mkdirs();//如果目标目录不存在，则创建
+		if (!targetDir.exists()) 
+		//如果目标目录不存在，则创建,如果创建失败，直接返回false;
+		if(!targetDir.mkdirs()) return false;
 		if (sourceDir.isFile()) {//如果是文件
 			return copyFile(sourceDir, targetDir);
 		}
 		
 		if (sourceDir.isDirectory()) {
 			File[] listFiles = sourceDir.listFiles();
+			System.out.println(Arrays.asList(listFiles));
 			for (File file : listFiles) {
 				File targetFile=new File(targetDir.getAbsolutePath()+File.separator+file.getName());
-				
 				if (file.isFile()) {
 					boolean copyFile = copyFile(file, targetFile);
 					if (!copyFile) return false;
 				}
 				if (file.isDirectory()) {
 					boolean copyDir = copyDir(file, targetFile);
-					if(copyDir)return false;
+					if(!copyDir)return false;
 				}
 			}
 		}
-		
 		return true;
 	}
 	
@@ -129,8 +131,13 @@ public class FileUtil {
 	public static boolean copyFile(File source,File target){
 //		源文件不存在直接返回false
 		if (!source.exists()) return false;
-		if (!target.exists()) target.mkdirs();//如果目标文件不存在，则创建
 		try {
+			if (!target.exists()) 
+			//如果目标文件不存在，则创建,如果创建不成功，直接返回false;
+			if(!target.createNewFile())  return false;
+//			if(!target.mkdir())  return false;
+//			if(!target.mkdirs())  return false;
+			
 			BufferedInputStream bis = new BufferedInputStream(new FileInputStream(source));
 			BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(target));
 			byte[] bys=new byte[1024];
@@ -141,6 +148,7 @@ public class FileUtil {
 			bos.flush();
 			bis.close();
 			bos.close();
+			System.out.println("copyFile---"+source.getName()+"---成功");
 			return true;
 		} catch (IOException e) {
 			e.printStackTrace();
