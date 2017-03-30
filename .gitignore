@@ -1,6 +1,6 @@
-/autoPackage/
+/autoPackage/out/
+/autoPackage/work/
 /bin/
-/libs/
 /.classpath/
 /.project/
 /README.md/
