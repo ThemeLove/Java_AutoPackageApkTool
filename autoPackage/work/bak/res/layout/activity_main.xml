@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<LinearLayout android:orientation="vertical" android:layout_width="fill_parent" android:layout_height="fill_parent"
-  xmlns:android="http://schemas.android.com/apk/res/android">
-    <TextView android:textSize="20.0dip" android:textColor="#ffff0000" android:id="@id/packageInfo" android:background="#ffffffff" android:layout_width="fill_parent" android:layout_height="300.0dip" android:text="渠道信息：" />
-    <Button android:textSize="20.0dip" android:layout_gravity="center_horizontal" android:id="@id/getPackageInfo" android:background="#ff99cc66" android:layout_width="100.0dip" android:layout_height="wrap_content" android:layout_margin="10.0dip" android:layout_marginTop="30.0dip" android:text="获取渠道号" />
-</LinearLayout>
