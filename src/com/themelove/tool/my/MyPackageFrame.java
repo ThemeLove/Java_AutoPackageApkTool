@@ -6,7 +6,6 @@ import java.awt.event.ActionListener;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileFilter;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -17,10 +16,13 @@ import java.util.List;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
+import javax.swing.JTextPane;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
+import javax.swing.plaf.basic.BasicInternalFrameTitlePane.RestoreAction;
 
 import com.themelove.tool.gui.MyEditComboBox;
 import com.themelove.tool.my.bean.ApktoolVersion;
@@ -49,14 +51,6 @@ public class MyPackageFrame extends JFrame {
 	 */
 	private static final long serialVersionUID = 1L;
 	/**
-	 * 选择渠道按钮
-	 */
-	private JButton chooseChannelBtn;
-	/**
-	 * 重置按钮
-	 */
-	private JButton resetBtn;
-	/**
 	 * 打包按钮
 	 */
 	private JButton packageBtn;
@@ -68,7 +62,16 @@ public class MyPackageFrame extends JFrame {
 	 * 打包过程信息
 	 */
 	private JTextArea resultInfo;
+	/**
+	 * 保存渠道号按钮
+	 */
+	private JButton saveChannelBtn;
+	/**
+	 * log文件查看按钮
+	 */
+	private JButton logBtn;
 
+	
 	/**
 	 * 当前项目的根目录
 	 */
@@ -117,8 +120,17 @@ public class MyPackageFrame extends JFrame {
 	private MyEditComboBox<ApktoolVersion> apktoolVersionComboBox;
 	private MyEditComboBox<Game> gameComboBox;
 	
-	private List<PackageMethod> packageMethodsList=new ArrayList<PackageMethod>();
+	/**
+	 * 支持的打包方式集合
+	 */
+	private List<PackageMethod> packageMethodList=new ArrayList<PackageMethod>();
+	/**
+	 * 支持的apktool版本集合
+	 */
 	private List<ApktoolVersion> apktoolVersionList=new ArrayList<ApktoolVersion>();
+	/**
+	 * 支持的游戏集合
+	 */
 	private List<Game> gameList=new ArrayList<Game>();
 	/**
 	 * 已经选择的渠道列表
@@ -137,7 +149,6 @@ public class MyPackageFrame extends JFrame {
 	 */
 	private Game		   currentGame;
 
-
 	/**
 	 * Create the frame.
 	 */
@@ -153,6 +164,7 @@ public class MyPackageFrame extends JFrame {
 	private void initData() {
 		FILE_SEPRATOR = System.getProperty("file.separator");
 		LINE_SEPRATOR=System.getProperty("line.separator");
+		
 		BASE_PATH = System.getProperty("user.dir");
 		BASE_GAME_PATH = BASE_PATH+FILE_SEPRATOR+"autoPackage"+FILE_SEPRATOR+"games";
 		BASE_TOOLS_PATH=BASE_PATH+FILE_SEPRATOR+"autoPackage"+FILE_SEPRATOR+"tools";
@@ -160,87 +172,20 @@ public class MyPackageFrame extends JFrame {
 		BASE_OUT_PATH=BASE_PATH+FILE_SEPRATOR+"autoPackage"+FILE_SEPRATOR+"out";
 		BAK_PATH = BASE_WORK_PATH+FILE_SEPRATOR+"bak";
 		TEMP_PATH = BASE_WORK_PATH+FILE_SEPRATOR+"temp";
+		
 		System.out.println("basePath:"+BASE_PATH);
 		System.out.println("gamePath:"+BASE_GAME_PATH);
 		System.out.println("toolPath:"+BASE_TOOLS_PATH);
-		initPackageMethods();
-		initApktoolVersions();
-		initConfigGames();
-	}
-
-
-	/**
-	 * 初始化支持的Apktool
-	 */
-	private void initApktoolVersions() {
-		File toolsFile = new File(BASE_TOOLS_PATH);
-		if (!toolsFile.exists()) toolsFile.mkdirs();
-//		TODO  没有时提示
-
-		File[] listFiles = toolsFile.listFiles(new java.io.FileFilter() {
-			@Override
-			public boolean accept(File pathname) {
-				if (pathname.isDirectory()&&pathname.getName().startsWith("apktool_")) {
-					return true;
-				}
-				return false;
-			}
-		});
 		
-		for (File file : listFiles) {
-			ApktoolVersion apktoolVersion= new ApktoolVersion();
-			apktoolVersion.setPath(file.getAbsolutePath());
-			apktoolVersion.setVersion(file.getName());
-			apktoolVersionList.add(apktoolVersion);
-		}
-	}
-
-	/**
-	 * 初始化支持的打包方式
-	 */
-	private void initPackageMethods() {
-		PackageMethod metaMethod = new PackageMethod();
-		metaMethod.setMethod(PackageMethod.METHOD_META);
-		metaMethod.setDesc("方式一：修改meta-data");
+		replaceMetaSb = new StringBuffer();
+//		默认值为PptvVasSdk_CID,PptvVasSdk_CCID,PptvVasSdk_DebugMode
+		replaceMetaSb.append("#").append("PptvVasSdk_CID").append(LINE_SEPRATOR)
+		.append("#").append("PptvVasSdk_CCID").append(LINE_SEPRATOR)
+		.append("#").append("PptvVasSdk_DebugMode");
 		
-		PackageMethod assetMethod = new PackageMethod();
-		assetMethod.setMethod(PackageMethod.METHOD_ASSET);
-		assetMethod.setDesc("方式二：修改assets配置");
-		
-		PackageMethod quickMethod = new PackageMethod();
-		quickMethod.setMethod(PackageMethod.METHOD_QUICK);
-		quickMethod.setDesc("方式三：修改签名目录");
-		
-		packageMethodsList.add(metaMethod);
-		packageMethodsList.add(assetMethod);
-		packageMethodsList.add(quickMethod);
-	}
-
-	/**
-	 * 初始化所有已经配置的游戏
-	 */
-	private void initConfigGames() {
-//		初始化
-		File baseGameFile = new File(BASE_GAME_PATH);
-		if (!baseGameFile.exists()) baseGameFile.mkdirs();
-//		提示
-		File[] games = baseGameFile.listFiles(new FileFilter() {
-			
-			@Override
-			public boolean accept(File pathname) {
-				if (pathname.isDirectory()) {
-					return true;
-				}
-				return false;
-			}
-		});
-		
-		for (File gameFile : games) {
-			Game game = new Game();
-			game.setName(gameFile.getName());
-			game.setGamePath(gameFile.getAbsolutePath());
-			gameList.add(game);
-		}
+		packageMethodList = Model.getPackageMethods();
+	    apktoolVersionList = Model.getApktoolVersions(BASE_TOOLS_PATH);
+		gameList = Model.getGames(BASE_GAME_PATH);
 	}
 
 	/**
@@ -249,16 +194,43 @@ public class MyPackageFrame extends JFrame {
 	private void initView() {
 		setTitle("MyVasPackageTool");
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		setBounds(100, 100, 600, 460);
+		setBounds(100, 100, 702, 538);
 		getContentPane().setLayout(null);
 		
-		chooseChannelBtn = new JButton("选择渠道列表");
-		chooseChannelBtn.setBounds(10, 83, 154, 27);
-		getContentPane().add(chooseChannelBtn);
+//		打包方式
+		packageMethodComboBox = new MyEditComboBox<PackageMethod>("打包方式","请选择打包方式", packageMethodItemListener);
+		packageMethodComboBox.setBounds(10, 11, 187, 45);
+		packageMethodComboBox.setVisible(true);
+		
+		packageMethodComboBox.updateComboBox(packageMethodList);
+		getContentPane().add(packageMethodComboBox);
+//		apktool版本
+		apktoolVersionComboBox = new MyEditComboBox<ApktoolVersion>("选择apktool版本","请选择游戏",apktoolVersionItemListener);
+		apktoolVersionComboBox.setBounds(10, 64, 187, 48);
+		apktoolVersionComboBox.updateComboBox(apktoolVersionList);
+		getContentPane().add(apktoolVersionComboBox);
+//		选择游戏
+		gameComboBox = new MyEditComboBox<Game>("请选择游戏","请选择游戏",gameItemListener);
+		gameComboBox.setBounds(10, 119, 187, 47);
+		gameComboBox.updateComboBox(gameList);
+		getContentPane().add(gameComboBox);
+		
+		metaLabel = new JLabel("替换的meta字段");
+		metaLabel.setBounds(204, 31, 107, 18);
+		getContentPane().add(metaLabel);
+		
+		replaceMetaPane = new JTextPane();
+		replaceMetaPane.setBounds(327, 0, 343, 69);
+		replaceMetaPane.setText(replaceMetaSb.toString());
+		getContentPane().add(replaceMetaPane);
+		
+		JLabel label = new JLabel("渠道信息如下：");
+		label.setBounds(10, 171, 107, 18);
+		getContentPane().add(label);
 		
 //		显示将要打包的渠道
 		JScrollPane channelsScrollPane = new JScrollPane();
-		channelsScrollPane.setBounds(10, 120, 152, 176);
+		channelsScrollPane.setBounds(10, 189, 187, 289);
 		channelsInfo = new JTextArea();
 		channelsInfo.setForeground(Color.BLUE);
 		channelsInfo.setBackground(new Color(0xcccccc, false));
@@ -267,64 +239,116 @@ public class MyPackageFrame extends JFrame {
 		
 //		动态显示打包过程
 		JScrollPane resultScrollPane = new JScrollPane();
-		resultScrollPane.setBounds(172, 120, 387, 176);
+		resultScrollPane.setBounds(204, 71, 466, 352);
 		resultInfo = new JTextArea();
-		resultInfo.setForeground(Color.WHITE);
+		resultInfo.setForeground(Color.BLACK);
 		resultInfo.setBackground(new Color(0xccffcc));
-//		resultInfo.setBackground(new Color(0xcccccc, true));
 		resultScrollPane.setViewportView(resultInfo);
 		getContentPane().add(resultScrollPane);
 		
-		packageBtn = new JButton("打包");
-		packageBtn.setBounds(487, 352, 75, 48);
-		getContentPane().add(packageBtn);
+//		保存渠道按钮
+		saveChannelBtn = new JButton("保存渠道号");
+		saveChannelBtn.setBounds(204, 430, 119, 48);
+		getContentPane().add(saveChannelBtn);
+		
+//		查看log文件按钮
+		logBtn = new JButton("log文件");
+		logBtn.setBounds(358, 430, 102, 48);
+		getContentPane().add(logBtn);
 		
 		resetBtn = new JButton("重置");
-		resetBtn.setBounds(14, 352, 84, 48);
-		
+		resetBtn.setBounds(474, 430, 94, 48);
 		getContentPane().add(resetBtn);
 		
-		resetBtn.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
+		
+//		打包按钮
+		packageBtn = new JButton("打包");
+		packageBtn.setBounds(582, 430, 88, 48);
+		getContentPane().add(packageBtn);
+	}
+	
+	
+	/**
+	 * 添加点击事件
+	 */
+	private void addListener() {
+		
+		channelsInfo.getDocument().addDocumentListener(new DocumentListener() {
+			
+			@Override
+			public void removeUpdate(DocumentEvent e) {
+				// 删除时的监听
+				// 内容变化时的监听
+				packageBtn.setEnabled(!(e.getLength()==0));
+			}
+			
+			@Override
+			public void insertUpdate(DocumentEvent e) {
+				// 插入时的监听
+				// 内容变化时的监听
+				packageBtn.setEnabled(!(e.getLength()==0));
+			}
+			
+			@Override
+			public void changedUpdate(DocumentEvent e) {
+				// 内容变化时的监听,一般用不到
+//					packageBtn.setEnabled(e.getLength()==0);
 			}
 		});
-		resetBtn.setBounds(14, 352, 84, 48);
-		getContentPane().add(resetBtn);
 		
-//		打包方式
-		packageMethodComboBox = new MyEditComboBox<PackageMethod>("打包方式","请选择打包方式", packageMethodItemListener);
-		packageMethodComboBox.setBounds(10, 10, 195, 48);
-		packageMethodComboBox.setVisible(true);
+		saveChannelBtn.addActionListener(new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				//点击保存渠道号按钮
+				
+			}
+		});
 		
-		packageMethodComboBox.updateComboBox(packageMethodsList);
-		getContentPane().add(packageMethodComboBox);
-//		apktool版本
-		apktoolVersionComboBox = new MyEditComboBox<ApktoolVersion>("选择apktool版本","请选择游戏",apktoolVersionItemListener);
-		apktoolVersionComboBox.setBounds(215, 10, 183, 48);
-		apktoolVersionComboBox.updateComboBox(apktoolVersionList);
-		getContentPane().add(apktoolVersionComboBox);
-//		选择游戏
-		gameComboBox = new MyEditComboBox<Game>("请选择游戏","请选择游戏",gameItemListener);
-		gameComboBox.setBounds(408, 10, 166, 48);
-		gameComboBox.updateComboBox(gameList);
-		getContentPane().add(gameComboBox);
+		logBtn.addActionListener(new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				// TODO Auto-generated method stub
+				
+			}
+		});
+		
+		resetBtn.addActionListener(new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				// TODO Auto-generated method stub
+				
+			}
+		});
+		
+		packageBtn.addActionListener(new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+//				真正多渠道打包
+				autoPackageChannels();
+			}
+		});
 	}
 	
 	@SuppressWarnings({ "unchecked", "unchecked" })
 	private MyEditComboBox.OnComboBoxItemClickListener<PackageMethod> packageMethodItemListener=new MyEditComboBox.OnComboBoxItemClickListener<PackageMethod>(){
-
 		@Override
 		public void OnItemClickListener(PackageMethod packageMethod) {
 			currentPackageMethod=packageMethod;
+			metaLabel.setVisible(currentPackageMethod.getMethod()==PackageMethod.METHOD_META);
+			replaceMetaPane.setVisible(currentPackageMethod.getMethod()==PackageMethod.METHOD_META);
 		}
-
+		
 		@Override
 		public void OnEditInputListener(String inputText) {
 			List<PackageMethod> temp=new ArrayList<>();
 			if (inputText.isEmpty()) {
-				temp=packageMethodsList;
+				temp=packageMethodList;
 			}else{
-				for (PackageMethod packageMethod : packageMethodsList) {
+				for (PackageMethod packageMethod : packageMethodList) {
 					if (packageMethod.getDesc().contains(inputText)) {
 						temp.add(packageMethod);
 					};
@@ -391,108 +415,21 @@ public class MyPackageFrame extends JFrame {
 			
 		}
 	};
-	
 	/**
-	 * 添加点击事件
+	 * 重置按钮
 	 */
-	private void addListener() {
-		
-		
-		/*chooseChannelBtn.addActionListener(new ActionListener() {
-			
-			@Override
-			public void actionPerformed(ActionEvent e) {
-//				获取当前的游戏名
-				String trim = gameNameEdit.getText().trim();
-				
-				
-				// 弹出文件选择框
-				JFileChooser jFileChooser = new JFileChooser("");
-				
-//				只接受文本文件
-				FileNameExtensionFilter filter = new FileNameExtensionFilter(
-						"文本文件(*.txt)", "txt");
-				jFileChooser.setFileFilter(filter);
-				int returnVal = jFileChooser
-						.showOpenDialog(MyPackageFrame.this);
-				if (returnVal == JFileChooser.APPROVE_OPTION) {
-					System.out.println("You chose to open this file: "+ jFileChooser.getSelectedFile().getName());
-//					将选择的文本路径设置到 channelsFilePath上
-					channelsFilePath.setText(jFileChooser.getSelectedFile().getAbsolutePath());
-//					解析选中文件中的渠道列表，并显示到channelsInfo上
-					String[] channels = getChannelsFormFile(jFileChooser.getSelectedFile());
-					StringBuffer channelsInftText=new StringBuffer();
-					channelsInftText.append("渠道列表如下："+LINE_SEPRATOR);
-					for (int i = 0; i < channels.length; i++) {
-						channelsInftText.append(channels[i]+LINE_SEPRATOR);
-					}
-					channelsInfo.setText(channelsInftText.toString());
-				}
-				
-				jFileChooser.addChoosableFileFilter(new FileFilter() {
-								
-								@Override
-								public String getDescription() {
-									// 此文件过滤器的描述
-									return "accept the file's name that endsWith .txt";
-								}
-								
-								@Override
-								public boolean accept(File f) {
-									//只接受.txt文件类型的文件
-									if (f.isDirectory()) return false;
-									if (f.getName().endsWith(".txt")) return true;
-									return false;
-								}
-							});
-			}
-			
-		});*/
-		
-		channelsInfo.getDocument().addDocumentListener(new DocumentListener() {
-			
-			@Override
-			public void removeUpdate(DocumentEvent e) {
-				// 删除时的监听
-				// 内容变化时的监听
-				packageBtn.setEnabled(!(e.getLength()==0));
-			}
-			
-			@Override
-			public void insertUpdate(DocumentEvent e) {
-				// 插入时的监听
-				// 内容变化时的监听
-				packageBtn.setEnabled(!(e.getLength()==0));
-			}
-			
-			@Override
-			public void changedUpdate(DocumentEvent e) {
-				// 内容变化时的监听,一般用不到
-//					packageBtn.setEnabled(e.getLength()==0);
-			}
-		});
-		
-		packageBtn.addActionListener(new ActionListener() {
-			
-			@Override
-			public void actionPerformed(ActionEvent e) {
-//				真正多渠道打包
-				autoPackageChannels();
-			}
-		});
-		
-		resetBtn.addActionListener(new ActionListener() {
-			
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				// 情况游戏名，渠道列表,resultInfo
-/*				gameNameEdit.setText("");
-				channelsFilePath.setText("");*/
-				channelsInfo.setText("");
-				resultInfo.setText("");
-			}
-		});
-	}
+	private JButton resetBtn;
+	private JLabel metaLabel;
+	/**
+	 * 显示替换Meta的Pane
+	 */
+	private JTextPane replaceMetaPane;
+	/**
+	 * 替换meta中的字段信息
+	 */
+	private StringBuffer replaceMetaSb;
+	
+
 
 
 	/**
