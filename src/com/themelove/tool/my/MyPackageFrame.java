@@ -716,7 +716,8 @@ public class MyPackageFrame extends JFrame {
 				String keystorePath=currentGame.getGamePath()+FILE_SEPRATOR+"keystore"+FILE_SEPRATOR+currentGame.getName()+".keystore";
 				String signApkPath=BASE_OUT_PATH+FILE_SEPRATOR+currentGame.getName()+FILE_SEPRATOR+currentGame.getName()+"_sign.apk";
 //				String jarsignerPath=currentApktoolVersion.getPath()+FILE_SEPRATOR+"jarsigner.exe";
-				String jarsignerPath="E:/Develop/jdk1.8/bin/jarsigner.exe";
+//				String jarsignerPath="E:/Develop/jdk1.8/bin/jarsigner.exe";
+				String jarsignerPath="D:/jdk/bin/jarsigner.exe";
 				String generateSignApkCommand = TextUtil.formatString("%s -digestalg SHA1 -sigalg SHA1withRSA -keystore %s -storepass %s -keypass %s -signedjar %s %s %s",
 	                    new String[] {jarsignerPath,keystorePath, currentGame.getName(), currentGame.getName(), signApkPath,
 						unSignApkPath,"ThemeLove"});
