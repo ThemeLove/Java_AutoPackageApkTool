@@ -318,8 +318,19 @@ public class MyPackageFrame extends JFrame {
 			
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				// TODO Auto-generated method stub
-				
+				// TODO Auto-generated method stub ,重置选项
+				packageMethodComboBox.setSelectedIndex(-1);
+				apktoolVersionComboBox.setSelectedIndex(-1);
+				gameComboBox.setSelectedIndex(-1);
+				currentPackageMethod=null;
+				currentApktoolVersion=null;
+				currentGame=null;
+				replaceMetaPane.setText("");
+				metaList.clear();
+				channelsInfo.setText("");
+				gameChannels.clear();
+				resultInfo.setText("");
+				packageBtn.setEnabled(false);
 			}
 		});
 		
@@ -327,10 +338,260 @@ public class MyPackageFrame extends JFrame {
 			
 			@Override
 			public void actionPerformed(ActionEvent e) {
+				
+				
+				
+//				根据打包方式多渠道打包
+				switch (currentPackageMethod.getMethod()) {
+				case PackageMethod.METHOD_META:
+					metaPackageChannels();
+					
+					break;
+				case PackageMethod.METHOD_ASSET:
+					assetPackageChannels();
+					
+					break;
+				case PackageMethod.METHOD_QUICK:
+					quickPackageChannels();
+					
+					break;
+				default:
+					break;
+				}
+				
 //				真正多渠道打包
 				autoPackageChannels();
 			}
+
 		});
+	}
+	
+
+	/**
+	 * meta元数据 打包方式
+	 */
+	private void metaPackageChannels() {
+//		初始化目录
+		metaStep1Init();
+		metaStep2DeCompileApk2Bak();
+		copyBak2Temp();
+		metaStep4LoopPackageWithChannels();
+	}
+	
+	/**
+	 * 循环修改AndroidManifest.xml打包
+	 */
+	private void metaStep4LoopPackageWithChannels() {
+		System.out.println(LINE_SEPRATOR+LINE_SEPRATOR+LINE_SEPRATOR);
+		System.out.println("步骤四：根据渠道号循环打包...");
+		
+		for (String channel : gameChannels) {
+			System.out.println("准备打---"+channel+"---渠道包...");
+			switch (currentPackageMethod.getMethod()) {
+			case PackageMethod.METHOD_META:
+				System.out.println("	(1):---正在修改meta对应的元数据...");
+				
+				
+				
+				
+				
+				
+				break;
+			case PackageMethod.METHOD_ASSET:
+//				修改
+//				1.配置文件目录
+				File channelFile = new File(TEMP_PATH+FILE_SEPRATOR+"assets"+FILE_SEPRATOR+"vasconfig"+FILE_SEPRATOR+"channel.ini");
+				try {
+					BufferedWriter br = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(channelFile)));
+					StringBuffer sb = new StringBuffer();
+					String[] channelArray = channel.split("_");
+					if (channelArray.length==1) {
+						sb.append("#").append(channelArray[0]).append(LINE_SEPRATOR)
+						.append("#").append(LINE_SEPRATOR)
+						.append("#").append("0");
+					}else{
+						sb.append("#").append(channelArray[0]).append(LINE_SEPRATOR)
+						.append("#").append(channelArray[1]).append(LINE_SEPRATOR)
+						.append("#").append("0");
+					}
+					br.write(sb.toString().trim());
+					br.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+				System.out.println("1.成功修改渠道号为---"+channel);
+				
+//				2.根据当前选择的apktool版本用apktool.jar给修改过渠道号的资源汇编成一个未签名的apk
+				String unSignApkPath=BASE_OUT_PATH+FILE_SEPRATOR+currentGame.getName()+FILE_SEPRATOR+currentGame.getName()+"_unsign.apk";
+				File apktoolFile = new File(currentApktoolVersion.getPath());
+//				未签名apk的保存路径
+				String generateUnSignApkCommand = TextUtil.formatString("java -jar apktool.jar b -o %s %s", new String[] {unSignApkPath, TEMP_PATH});
+				CmdUtil.exeCmdWithLog(generateUnSignApkCommand, null, apktoolFile);
+				
+//				用7zip将修改过渠道号的资源回压缩成一个未签名的apk
+//				String generateUnSignApkWith7ZipCommand=TextUtil.formatString("%s a %s %s", new String[]{zipFilePath,unSignApkPath,TEMP_PATH});
+//				CmdUtil.exeCmdWithLog(generateUnSignApkWith7ZipCommand);
+				
+				System.out.println("生成未签名---"+currentGame.getName()+"_unsign.apk---成功");
+				
+//				3.用jarsigner.jar给未签名apk签名
+				String keystorePath=currentGame.getGamePath()+FILE_SEPRATOR+"keystore"+FILE_SEPRATOR+currentGame.getName()+".keystore";
+				String signApkPath=BASE_OUT_PATH+FILE_SEPRATOR+currentGame.getName()+FILE_SEPRATOR+currentGame.getName()+"_sign.apk";
+//				String jarsignerPath=currentApktoolVersion.getPath()+FILE_SEPRATOR+"jarsigner.exe";
+//				String jarsignerPath="E:/Develop/jdk1.8/bin/jarsigner.exe";
+				String jarsignerPath="D:/jdk/bin/jarsigner.exe";
+				String generateSignApkCommand = TextUtil.formatString("%s -digestalg SHA1 -sigalg SHA1withRSA -keystore %s -storepass %s -keypass %s -signedjar %s %s %s",
+	                    new String[] {jarsignerPath,keystorePath, currentGame.getName(), currentGame.getName(), signApkPath,
+						unSignApkPath,"ThemeLove"});
+//				CmdUtil.exeCmd(generateSignApkCommand, null, apktoolFile);
+				CmdUtil.exeCmdWithLog(generateSignApkCommand);
+				System.out.println("生成签名---"+currentGame.getName()+"_sign.apk---成功");
+//				删除之前的未签名包
+//				FileUtil.deleteFile(new File(unSignApkPath));
+				
+//				4.对已签名包对其优化
+				String channelApkPath=BASE_OUT_PATH+FILE_SEPRATOR+currentGame.getName()+FILE_SEPRATOR+currentGame.getName()+"_"+channel+".apk";
+				String zipalignPath=currentApktoolVersion.getPath()+FILE_SEPRATOR+"zipalign.exe";
+				String generateChannelApkCommand = TextUtil.formatString("%s -v 4 %s %s", new String[] {zipalignPath,signApkPath, channelApkPath});
+//				CmdUtil.exeCmd(generateSignApkCommand, null, apktoolFile);
+				CmdUtil.exeCmdWithLog(generateChannelApkCommand);
+				System.out.println("生成最终渠道包---"+currentGame.getName()+"_"+channel+".apk---成功");
+//				删除之前签名包
+//				FileUtil.deleteFile(new File(signApkPath));
+				
+				break;
+			case PackageMethod.METHOD_QUICK:
+				
+				break;
+
+			default:
+				break;
+			}
+		}
+	}
+
+	/**
+	 * copy Bak目录到Temp目录
+	 */
+	private void copyBak2Temp() {
+		System.out.println(LINE_SEPRATOR+LINE_SEPRATOR+LINE_SEPRATOR);
+		System.out.println("步骤三：拷贝bak目录到temp目录...");
+		
+		File bakDir = new File(BAK_PATH);
+		File tempDir = new File(TEMP_PATH);
+		boolean copyDir = FileUtil.copyDir(bakDir, tempDir);
+		if (copyDir) {
+			System.out.println("	拷贝---bak----->temp----成功！");
+		} else {
+			System.out.println("	拷贝---bak----->temp----失败！，请手动操作后重试...");
+			return;
+		}
+	}
+
+	/**
+	 * 反编译apk到Bak目录
+	 */
+	private void metaStep2DeCompileApk2Bak() {
+		System.out.println(LINE_SEPRATOR+LINE_SEPRATOR+LINE_SEPRATOR);
+		System.out.println("步骤二：---反编译apk到Bak目录");
+		File apktoolFile = new File(currentApktoolVersion.getPath());
+		String decompileApkCommand=TextUtil.formatString("java -jar -Xms512m -Xmx512m apktool.jar d -f -s -o %s %s", new String[]{BAK_PATH,gameApkPath});
+		CmdUtil.exeCmdWithLog(decompileApkCommand, null, apktoolFile);
+		System.out.println("	反编译apk到Bak目录成功");
+	}
+	
+	/**
+	 * meta 元数据打包方式 step1 init
+	 */
+	private void metaStep1Init() {
+		System.out.println("开始打包...");
+		System.out.println("打包方式:---"+currentPackageMethod.getDesc());
+		System.out.println(LINE_SEPRATOR+LINE_SEPRATOR+LINE_SEPRATOR);
+		System.out.println("步骤一:---初始化");
+		
+		System.out.println("	(1):---正在检查游戏母包是否存在...");
+//		1.检查母包是否存在
+		gameApkPath = currentGame.getGamePath()+FILE_SEPRATOR+"apk"+FILE_SEPRATOR+currentGame.getName()+".apk";
+		File apkFile = new File(gameApkPath);
+		
+		if (apkFile.exists()){
+			System.out.println("	游戏---"+currentGame.getName()+"---母包存在");
+		} else{
+			System.out.println("	游戏---"+currentGame.getName()+"---母包不存在,请检查后重试...");
+			return;
+		}
+		
+//		2.检查要替换的Meta字段格式是否正确
+		System.out.println();
+		System.out.println("	(2):---正在检查将要替换的Meta字段是否正确...");
+		String replaceMetaStr = replaceMetaPane.getText().trim();
+		if (!replaceMetaStr.contains("#")) {
+			System.out.println("	请用#号分隔");
+			return;
+		}
+		if (!replaceMetaStr.startsWith("#")) {
+			System.out.println("	请以#号开头");
+			return;
+		}
+		String[] split = replaceMetaStr.split("#");
+		metaList = new ArrayList<String>();
+		for (String metaStr : split) {
+			if (!metaStr.isEmpty()) {
+				metaList.add(metaStr);
+			}
+		}
+		
+		
+//		3.清空打包过程中用到的目录
+		System.out.println();
+		System.out.println("	(3):清空打包过程中用到的目录...");
+		
+		File bakDir = new File(BAK_PATH);
+		File tempDir = new File(TEMP_PATH);
+		File gameOutDir = new File(BASE_OUT_PATH+FILE_SEPRATOR+currentGame.getName());
+		
+		boolean deleteBakDir = FileUtil.deleteFiles(bakDir);
+		if (deleteBakDir) {
+			System.out.println("	清空bak目录成功...");
+		}else{
+			System.out.println("	清空bak目录不成功，请手动清空后重试...");
+			return;
+		}
+		
+		boolean deleteTempDir = FileUtil.deleteFiles(tempDir);
+		if (deleteTempDir) {
+			System.out.println("	清空temp目录成功...");
+		}else{
+			System.out.println("	清空temp目录不成功，请手动清空后重试...");
+			return;
+		}
+		
+		boolean deleteGameOutDir = FileUtil.deleteFiles(gameOutDir);
+		if (deleteGameOutDir) {
+			System.out.println("	清空---"+currentGame.getName()+"---out目录成功...");
+		}else{
+			System.out.println("	清空---"+currentGame.getName()+"---out目录成功,请手动清空后重试...");
+			return;
+		}
+//		4.添加公共资源依赖
+		System.out.println();
+		System.out.println("	(4)添加公共资源---framework-res.apk---依赖...");
+		CmdUtil.exeCmdWithLog("java -jar -Xms512m -Xmx512m apktool.jar if framework-res.apk",null, new File(currentApktoolVersion.getPath()));
+		System.out.println("	添加公共资源---framework-res.apk---依赖成功");
+	}
+
+	/**
+	 * Asset配置文件 打包方式
+	 */
+	private void assetPackageChannels(){
+		
+	}
+	
+	/**
+	 * 快速 打包方式
+	 */
+	private void quickPackageChannels(){
+		
 	}
 	
 	@SuppressWarnings({ "unchecked", "unchecked" })
@@ -385,6 +646,7 @@ public class MyPackageFrame extends JFrame {
 			apktoolVersionComboBox.updateComboBox(temp);
 		}
 	};
+	
 	@SuppressWarnings({ "unchecked", "unchecked" })
 	private MyEditComboBox.OnComboBoxItemClickListener<Game> gameItemListener=new MyEditComboBox.OnComboBoxItemClickListener<Game>(){
 
@@ -428,6 +690,10 @@ public class MyPackageFrame extends JFrame {
 	 * 替换meta中的字段信息
 	 */
 	private StringBuffer replaceMetaSb;
+	/**
+	 * 保存替换meta中的字段集合
+	 */
+	private ArrayList<String> metaList;
 	
 
 
@@ -460,144 +726,15 @@ public class MyPackageFrame extends JFrame {
 	 */
 	protected void autoPackageChannels() {
 //		一：初始化
-		Step1_init();
+//		Step1_init();
 //		二：根据打包方式，反编译或者解压母包到bak目录
-		step2_zipApk2Bak(gameApkPath);
 //		三：拷贝bak目录到temp目录
-		step3_copyBak2Temp();
+//		step3_copyBak2Temp();
 //		四：根据打包方式，循环修改渠道号
 		step4_loopPackageWithChannels();
 	}
-	/**
-	 * 步骤一
-	 * 打包初始化
-	 */
-	private void Step1_init(){
-		System.out.println("开始循环打包:");
-		System.out.println(LINE_SEPRATOR+LINE_SEPRATOR+LINE_SEPRATOR);
-		System.out.println("步骤一：初始化...");
-//		1.检查母包是否存在
-		gameApkPath = currentGame.getGamePath()+FILE_SEPRATOR+"apk"+FILE_SEPRATOR+currentGame.getName()+".apk";
-		File apkFile = new File(gameApkPath);
-		
-		if (apkFile.exists()){
-			System.out.println("游戏---"+currentGame.getName()+"---母包存在");
-		} else{
-			System.out.println("游戏---"+currentGame.getName()+"---母包不存在,请检查后重试...");
-			return;
-		}
-//		2.清空打包过程中用到的目录
-		File bakDir = new File(BAK_PATH);
-		File tempDir = new File(TEMP_PATH);
-		File gameOutDir = new File(BASE_OUT_PATH+FILE_SEPRATOR+currentGame.getName());
-		
-		boolean deleteBakDir = FileUtil.deleteFiles(bakDir);
-		if (deleteBakDir) {
-			System.out.println("清空bak目录成功...");
-		}else{
-			System.out.println("清空bak目录不成功，请手动清空后重试...");
-			return;
-		}
-		
-		boolean deleteTempDir = FileUtil.deleteFiles(tempDir);
-		if (deleteTempDir) {
-			System.out.println("清空temp目录成功...");
-		}else{
-			System.out.println("清空temp目录不成功，请手动清空后重试...");
-			return;
-		}
-		
-		boolean deleteGameOutDir = FileUtil.deleteFiles(gameOutDir);
-		if (deleteGameOutDir) {
-			System.out.println("清空---"+currentGame.getName()+"---out目录成功...");
-		}else{
-			System.out.println("清空---"+currentGame.getName()+"---out目录成功,请手动清空后重试...");
-		}
-//		3.添加公共资源依赖
-		CmdUtil.exeCmdWithLog("java -jar -Xms512m -Xmx512m apktool.jar if framework-res.apk",null, new File(currentApktoolVersion.getPath()));
-	}
+
 	
-	
-	/**
-	 * 步骤二
-	 * 根据打包方式，解压或反编译母包到bak目录
-	 * @param gameApkPath
-	 */
-	private void step2_zipApk2Bak(String gameApkPath) {
-		System.out.println(LINE_SEPRATOR+LINE_SEPRATOR+LINE_SEPRATOR);
-		System.out.println("步骤二：根据打包方式，解压或反编译母包到bak目录...");
-		
-		switch (currentPackageMethod.getMethod()) {
-		case PackageMethod.METHOD_META://修改AndroidManifest.xml中meta方式要用apktool反编译到bak目录
-			
-//			File apktoolFile = new File(currentApktoolVersion.getPath());
-//			String decompileApkCommand=TextUtil.formatString("java -jar -Xms512m -Xmx512m apktool.jar d -o %s %s", new String[]{BAK_PATH,gameApkPath});
-//			CmdUtil.exeCmdWithLog(decompileApkCommand, null, apktoolFile);
-
-			break;
-		case PackageMethod.METHOD_ASSET://修改asset目录中的配置文件和META-INFO文件方式不用反编译，只需解压即可，省去反编译的步骤，加快速度。
-		case PackageMethod.METHOD_QUICK:
-			File apktoolFile = new File(currentApktoolVersion.getPath());
-			String decompileApkCommand=TextUtil.formatString("java -jar -Xms512m -Xmx512m apktool.jar d -f -s -o %s %s", new String[]{BAK_PATH,gameApkPath});
-			CmdUtil.exeCmdWithLog(decompileApkCommand, null, apktoolFile);
-			
-//			zipFilePath = BASE_TOOLS_PATH+FILE_SEPRATOR+"7zip"+FILE_SEPRATOR+"7z.exe";
-//			File zipFile = new File(zipFilePath);
-////			File zipFile = new File("E:/softwore/7zip/7z.exe");
-//			if(!zipFile.exists()){
-//				System.out.println("压缩工具不存在，请检查目录后重试...");
-//				return ;
-//			}
-//			
-//			String logPath=BASE_OUT_PATH+FILE_SEPRATOR+"log.txt";
-//			
-////			7z x "d:\File.7z" -y -aos -o"d:\Mydir"
-////			String zipCommand = TextUtil.formatString("\"%s\" x \"%s\" -y -aos -o\"%s\" ",new String[]{zipFilePath,gameApkPath,BAK_PATH});
-////			String zipCommand = TextUtil.formatString("%s x \"%s\" -y -aos -o\"%s\" ",new String[]{zipFilePath,gameApkPath,BAK_PATH});
-////			String zipCommand = TextUtil.formatString("%s x %s -y -aos -o%s 2>%s",new String[]{zipFilePath,gameApkPath,BAK_PATH,logPath});
-//			String zipCommand = TextUtil.formatString("%s x %s -y -aos -o%s",new String[]{zipFilePath,gameApkPath,BAK_PATH});
-//			System.out.println("zipCommand---"+zipCommand);
-//			CmdUtil.exeCmdWithLog(zipCommand);
-
-//			String zipCommand_2 = TextUtil.formatString("7z x \"%s\" -y -aos -o\"%s\" ",new String[]{zipFilePath,gameApkPath,BAK_PATH});
-//			Process process_2 = CmdUtil.exeCmd(zipCommand_2, null, zipFile);
-//			
-//			
-//			String zipCommand_3 = TextUtil.formatString("7z x \"%s\" -y -aos -o\"%s\" ", new String[]{gameApkPath,BAK_PATH});
-//			Process process_3 = CmdUtil.exeCmd("cmd.exe /c start "+zipCommand_3, null, zipFile);
-/*			try {
-				process.waitFor();
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}*/
-			break;
-		default:
-			System.out.println("解压母包："+currentGame.getName()+".apk---到--->"+BAK_PATH+"---成功！");
-			break;
-		}
-	}
-	
-
-	/**
-	 * 步骤三
-	 * 拷贝bak文件到temp目录
-	 */
-	private void step3_copyBak2Temp() {
-		System.out.println(LINE_SEPRATOR+LINE_SEPRATOR+LINE_SEPRATOR);
-		System.out.println("步骤三：拷贝bak文件到temp目录...");
-		
-		File bakDir = new File(BAK_PATH);
-		File tempDir = new File(TEMP_PATH);
-		boolean copyDir = FileUtil.copyDir(bakDir, tempDir);
-		if (copyDir) {
-			System.out.println("拷贝---bak----->temp----成功！");
-		} else {
-			System.out.println("拷贝---bak----->temp----失败！，请手动操作后重试...");
-			return;
-		}
-	}
-
 	/**
 	 * 步骤四
 	 * 根据渠道号循环打包
