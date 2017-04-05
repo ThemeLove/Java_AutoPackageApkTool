@@ -1,0 +1,6 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<channels>
+	<channel META_CHANNELID="224" DEBUG_MODE="true" />
+	<channel META_CHANNELID="225" DEBUG_MODE="false" />
+	<channel META_CHANNELID="187" DEBUG_MODE="true" />
+</channels>

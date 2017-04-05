@@ -8,11 +8,14 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -23,6 +26,15 @@ import javax.swing.JTextPane;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.plaf.basic.BasicInternalFrameTitlePane.RestoreAction;
+
+import org.dom4j.Attribute;
+import org.dom4j.Document;
+import org.dom4j.DocumentException;
+import org.dom4j.Element;
+import org.dom4j.io.OutputFormat;
+import org.dom4j.io.SAXReader;
+import org.dom4j.io.XMLWriter;
+import org.python.apache.xerces.parsers.XMLParser;
 
 import com.themelove.tool.gui.MyEditComboBox;
 import com.themelove.tool.my.bean.ApktoolVersion;
@@ -135,7 +147,7 @@ public class MyPackageFrame extends JFrame {
 	/**
 	 * 已经选择的渠道列表
 	 */
-	private List<String> gameChannels;
+	private List<Map<String,String>> gameChannels;
 	/**
 	 * 当前选择的打包方式
 	 */
@@ -179,9 +191,8 @@ public class MyPackageFrame extends JFrame {
 		
 		replaceMetaSb = new StringBuffer();
 //		默认值为PptvVasSdk_CID,PptvVasSdk_CCID,PptvVasSdk_DebugMode
-		replaceMetaSb.append("#").append("PptvVasSdk_CID").append(LINE_SEPRATOR)
-		.append("#").append("PptvVasSdk_CCID").append(LINE_SEPRATOR)
-		.append("#").append("PptvVasSdk_DebugMode");
+		replaceMetaSb.append("#").append("META_CHANNELID").append(LINE_SEPRATOR)
+		.append("#").append("DEBUG_MODE");
 		
 		packageMethodList = Model.getPackageMethods();
 	    apktoolVersionList = Model.getApktoolVersions(BASE_TOOLS_PATH);
@@ -382,93 +393,98 @@ public class MyPackageFrame extends JFrame {
 	 * 循环修改AndroidManifest.xml打包
 	 */
 	private void metaStep4LoopPackageWithChannels() {
-		System.out.println(LINE_SEPRATOR+LINE_SEPRATOR+LINE_SEPRATOR);
+		System.out.println(LINE_SEPRATOR + LINE_SEPRATOR + LINE_SEPRATOR);
 		System.out.println("步骤四：根据渠道号循环打包...");
-		
-		for (String channel : gameChannels) {
-			System.out.println("准备打---"+channel+"---渠道包...");
-			switch (currentPackageMethod.getMethod()) {
-			case PackageMethod.METHOD_META:
-				System.out.println("	(1):---正在修改meta对应的元数据...");
-				
-				
-				
-				
-				
-				
-				break;
-			case PackageMethod.METHOD_ASSET:
-//				修改
-//				1.配置文件目录
-				File channelFile = new File(TEMP_PATH+FILE_SEPRATOR+"assets"+FILE_SEPRATOR+"vasconfig"+FILE_SEPRATOR+"channel.ini");
-				try {
-					BufferedWriter br = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(channelFile)));
-					StringBuffer sb = new StringBuffer();
-					String[] channelArray = channel.split("_");
-					if (channelArray.length==1) {
-						sb.append("#").append(channelArray[0]).append(LINE_SEPRATOR)
-						.append("#").append(LINE_SEPRATOR)
-						.append("#").append("0");
-					}else{
-						sb.append("#").append(channelArray[0]).append(LINE_SEPRATOR)
-						.append("#").append(channelArray[1]).append(LINE_SEPRATOR)
-						.append("#").append("0");
-					}
-					br.write(sb.toString().trim());
-					br.close();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-				System.out.println("1.成功修改渠道号为---"+channel);
-				
-//				2.根据当前选择的apktool版本用apktool.jar给修改过渠道号的资源汇编成一个未签名的apk
-				String unSignApkPath=BASE_OUT_PATH+FILE_SEPRATOR+currentGame.getName()+FILE_SEPRATOR+currentGame.getName()+"_unsign.apk";
-				File apktoolFile = new File(currentApktoolVersion.getPath());
-//				未签名apk的保存路径
-				String generateUnSignApkCommand = TextUtil.formatString("java -jar apktool.jar b -o %s %s", new String[] {unSignApkPath, TEMP_PATH});
-				CmdUtil.exeCmdWithLog(generateUnSignApkCommand, null, apktoolFile);
-				
-//				用7zip将修改过渠道号的资源回压缩成一个未签名的apk
-//				String generateUnSignApkWith7ZipCommand=TextUtil.formatString("%s a %s %s", new String[]{zipFilePath,unSignApkPath,TEMP_PATH});
-//				CmdUtil.exeCmdWithLog(generateUnSignApkWith7ZipCommand);
-				
-				System.out.println("生成未签名---"+currentGame.getName()+"_unsign.apk---成功");
-				
-//				3.用jarsigner.jar给未签名apk签名
-				String keystorePath=currentGame.getGamePath()+FILE_SEPRATOR+"keystore"+FILE_SEPRATOR+currentGame.getName()+".keystore";
-				String signApkPath=BASE_OUT_PATH+FILE_SEPRATOR+currentGame.getName()+FILE_SEPRATOR+currentGame.getName()+"_sign.apk";
-//				String jarsignerPath=currentApktoolVersion.getPath()+FILE_SEPRATOR+"jarsigner.exe";
-//				String jarsignerPath="E:/Develop/jdk1.8/bin/jarsigner.exe";
-				String jarsignerPath="D:/jdk/bin/jarsigner.exe";
-				String generateSignApkCommand = TextUtil.formatString("%s -digestalg SHA1 -sigalg SHA1withRSA -keystore %s -storepass %s -keypass %s -signedjar %s %s %s",
-	                    new String[] {jarsignerPath,keystorePath, currentGame.getName(), currentGame.getName(), signApkPath,
-						unSignApkPath,"ThemeLove"});
-//				CmdUtil.exeCmd(generateSignApkCommand, null, apktoolFile);
-				CmdUtil.exeCmdWithLog(generateSignApkCommand);
-				System.out.println("生成签名---"+currentGame.getName()+"_sign.apk---成功");
-//				删除之前的未签名包
-//				FileUtil.deleteFile(new File(unSignApkPath));
-				
-//				4.对已签名包对其优化
-				String channelApkPath=BASE_OUT_PATH+FILE_SEPRATOR+currentGame.getName()+FILE_SEPRATOR+currentGame.getName()+"_"+channel+".apk";
-				String zipalignPath=currentApktoolVersion.getPath()+FILE_SEPRATOR+"zipalign.exe";
-				String generateChannelApkCommand = TextUtil.formatString("%s -v 4 %s %s", new String[] {zipalignPath,signApkPath, channelApkPath});
-//				CmdUtil.exeCmd(generateSignApkCommand, null, apktoolFile);
-				CmdUtil.exeCmdWithLog(generateChannelApkCommand);
-				System.out.println("生成最终渠道包---"+currentGame.getName()+"_"+channel+".apk---成功");
-//				删除之前签名包
-//				FileUtil.deleteFile(new File(signApkPath));
-				
-				break;
-			case PackageMethod.METHOD_QUICK:
-				
-				break;
 
-			default:
-				break;
+		
+//		1.修改meta元数据
+		for (Map<String, String> channelMap : gameChannels) {
+			System.out.println("准备打---" + channelMap + "---渠道包---");
+			System.out.println("	(1):---正在修改meta对应的元数据...");
+
+			// AndroidManifest.xml文件目录
+			String manifestPath = TEMP_PATH + FILE_SEPRATOR+ "AndroidManifest.xml";
+			SAXReader saxReader = new SAXReader();
+			try {
+				Document document = saxReader.read(new File(manifestPath));
+				Element rootElement = document.getRootElement();
+				List<Element> metas = rootElement.element("application").elements("meta-data");
+				for (Element meta : metas) {
+					for (String name : channelMap.keySet()) {
+						if (name.equals(meta.attributeValue("name"))) {
+							meta.remove(meta.attribute("value"));
+							meta.addAttribute("value", channelMap.get(name));
+						}
+					}
+				}
+				 OutputFormat xmlFormat = new OutputFormat("    ", true, "UTF-8");
+				
+			    XMLWriter writer = new XMLWriter(new FileWriter(new File(manifestPath)), xmlFormat);
+                writer.write(document);
+                writer.close();
+			} catch (Exception e) {
+
+			}
+			System.out.println("修改meta成功");
+//			2.根据当前选择的apktool版本用apktool.jar给修改过渠道号的资源汇编成一个未签名的apk
+			System.out.println("	(2):---正在回编成一个未签名的apk...");
+			String unSignApkPath=BASE_OUT_PATH+FILE_SEPRATOR+currentGame.getName()+FILE_SEPRATOR+currentGame.getName()+"_unsign.apk";
+			File apktoolFile = new File(currentApktoolVersion.getPath());
+//			未签名apk的保存路径
+			String generateUnSignApkCommand = TextUtil.formatString("java -jar apktool.jar b -o %s %s", new String[] {unSignApkPath, TEMP_PATH});
+			CmdUtil.exeCmdWithLog(generateUnSignApkCommand, null, apktoolFile);
+			System.out.println("生成未签名:"+currentGame.getName()+"_unsign.apk"+"成功！");
+			
+//			3.用jarsigner.jar给未签名apk签名
+			File unSignApkFile = new File(unSignApkPath);
+			
+			if (!unSignApkFile.exists()) {
+				System.out.println("没有找到---未签名---的渠道包");
+				return;
+			}
+			String keystorePath=currentGame.getGamePath()+FILE_SEPRATOR+"keystore"+FILE_SEPRATOR+currentGame.getName()+".keystore";
+			String signApkPath=BASE_OUT_PATH+FILE_SEPRATOR+currentGame.getName()+FILE_SEPRATOR+currentGame.getName()+"_sign.apk";
+//			String jarsignerPath=currentApktoolVersion.getPath()+FILE_SEPRATOR+"jarsigner.exe";
+//			String jarsignerPath="E:/Develop/jdk1.8/bin/jarsigner.exe";
+			String jarsignerPath="D:/jdk/bin/jarsigner.exe";
+			String generateSignApkCommand = TextUtil.formatString("%s -digestalg SHA1 -sigalg SHA1withRSA -keystore %s -storepass %s -keypass %s -signedjar %s %s %s",
+                    new String[] {jarsignerPath,keystorePath, currentGame.getName(), currentGame.getName(), signApkPath,
+					unSignApkPath,currentGame.getName()});
+			System.out.println("generateSignApkCommand:---"+generateSignApkCommand);
+//			CmdUtil.exeCmd(generateSignApkCommand, null, apktoolFile);
+			CmdUtil.exeCmdWithLog(generateSignApkCommand);
+			System.out.println("生成签名---"+currentGame.getName()+"_sign.apk---成功");
+//			删除之前的未签名包
+//			FileUtil.deleteFile(new File(unSignApkPath));
+			
+			File signApkFile = new File(signApkPath);
+			
+			if (!signApkFile.exists()) {
+				System.out.println("没有找到---签名---的渠道包");
+				return;
+			}
+			
+//			4.对已签名包对其优化
+			String channelApkPath=BASE_OUT_PATH+FILE_SEPRATOR+currentGame.getName()+FILE_SEPRATOR+currentGame.getName()+"_"+channelMap.get("META_CHANNELID")+".apk";
+			
+			String zipalignPath=currentApktoolVersion.getPath()+FILE_SEPRATOR+"zipalign.exe";
+			String generateChannelApkCommand = TextUtil.formatString("%s -v 4 %s %s", new String[] {zipalignPath,signApkPath, channelApkPath});
+//			CmdUtil.exeCmd(generateSignApkCommand, null, apktoolFile);
+			CmdUtil.exeCmdWithLog(generateChannelApkCommand);
+			System.out.println("生成最终渠道包---"+currentGame.getName()+"_"+channelMap.get("META_CHANNELID")+".apk---成功");
+			
+			File channelApkFile = new File(channelApkPath);
+			
+			
+			if (!channelApkFile.exists()) {
+				System.out.println("没有找到---最终的---渠道包");
+				return;
+			}
+			
+//			删除之前签名包
+			FileUtil.deleteFile(new File(signApkPath));
 			}
 		}
-	}
 
 	/**
 	 * copy Bak目录到Temp目录
@@ -656,17 +672,17 @@ public class MyPackageFrame extends JFrame {
 			System.out.println("回调：game		OnItemClickListener------"+game.toString());
 			currentGame=game;
 //			生成对应游戏要打的渠道包
-			File channelFile = new File(game.getGamePath()+FILE_SEPRATOR+"channel"+FILE_SEPRATOR+"channel.txt");
+			File channelFile = new File(game.getGamePath()+FILE_SEPRATOR+"channel"+FILE_SEPRATOR+"channel.xml");
 			if (channelFile.exists()){
-				gameChannels = getChannelsFormFile(channelFile);
-				if (gameChannels!=null) {
-					StringBuffer info=new StringBuffer();
-					for (String channel : gameChannels) {
-						if (channel.isEmpty()) continue;
-						info.append(channel).append(LINE_SEPRATOR);
+				StringBuffer info = new StringBuffer();
+				gameChannels = getChannelsFormXml(channelFile);
+				for (Map<String,String> channelMap : gameChannels) {
+					info.append("channel:").append(LINE_SEPRATOR);
+					for (String key : channelMap.keySet()) {
+						info.append(key).append(":").append(channelMap.get(key)).append(LINE_SEPRATOR);
 					}
-					channelsInfo.setText(info.toString());
 				}
+				channelsInfo.setText(info.toString());
 			}else{
 				System.out.println("游戏:-----"+game.getName()+"----渠道文件不存在");
 			}
@@ -722,6 +738,34 @@ public class MyPackageFrame extends JFrame {
 	}
 
 	/**
+	 * 从xml配置文件中获取渠道信息
+	 * @param file
+	 * @return
+	 */
+	private List<Map<String,String>> getChannelsFormXml(File file){
+		ArrayList<Map<String, String>> channelsData = new ArrayList<Map<String,String>>();
+		
+		SAXReader saxReader = new SAXReader();
+		try {
+			Document reader = saxReader.read(file);
+			Element rootElement = reader.getRootElement();
+			List<Element> channelList = rootElement.elements("channel");
+			for (Element channel : channelList) {
+				HashMap<String,String> channelMap = new HashMap<>();
+				List<Attribute> attributes = channel.attributes();
+				for (Attribute attribute : attributes) {
+					channelMap.put(attribute.getName(), attribute.getValue());
+				}
+				channelsData.add(channelMap);
+			}
+			
+		} catch (DocumentException e) {
+			e.printStackTrace();
+		}
+		return channelsData;
+	}
+	
+	/**
 	 * 多渠道循环自动打包
 	 */
 	protected void autoPackageChannels() {
@@ -731,14 +775,14 @@ public class MyPackageFrame extends JFrame {
 //		三：拷贝bak目录到temp目录
 //		step3_copyBak2Temp();
 //		四：根据打包方式，循环修改渠道号
-		step4_loopPackageWithChannels();
+//		step4_loopPackageWithChannels();
 	}
 
-	
-	/**
+/*	
+	*//**
 	 * 步骤四
 	 * 根据渠道号循环打包
-	 */
+	 *//*
 	private void step4_loopPackageWithChannels() {
 		System.out.println(LINE_SEPRATOR+LINE_SEPRATOR+LINE_SEPRATOR);
 		System.out.println("步骤四：根据渠道号循环打包...");
@@ -820,5 +864,5 @@ public class MyPackageFrame extends JFrame {
 				break;
 			}
 		}
-	}
+	}*/
 }
