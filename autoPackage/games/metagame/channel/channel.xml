@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <channels>
-	<channel META_CHANNELID="224" DEBUG_MODE="true" />
-	<channel META_CHANNELID="225" DEBUG_MODE="false" />
-	<channel META_CHANNELID="187" DEBUG_MODE="true" />
+	<channel PptvVasSdk_CID="224" PptvVasSdk_CCID="" PptvVasSdk_DebugMode="true" />
+	<channel PptvVasSdk_CID="225" PptvVasSdk_CCID="" PptvVasSdk_DebugMode="false" />
+	<channel PptvVasSdk_CID="613" PptvVasSdk_CCID="57193" PptvVasSdk_DebugMode="true" />
 </channels>

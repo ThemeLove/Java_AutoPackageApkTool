@@ -3,10 +3,21 @@ package com.themelove.tool.my;
 import java.io.File;
 import java.io.FileFilter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+import org.dom4j.Attribute;
+import org.dom4j.Document;
+import org.dom4j.DocumentException;
+import org.dom4j.Element;
+import org.dom4j.io.SAXReader;
+
+import com.themelove.tool.my.bean.Apk;
 import com.themelove.tool.my.bean.ApktoolVersion;
+import com.themelove.tool.my.bean.Channel;
 import com.themelove.tool.my.bean.Game;
+import com.themelove.tool.my.bean.Keystore;
 import com.themelove.tool.my.bean.PackageMethod;
 
 /**
@@ -90,10 +101,104 @@ public class Model {
 		
 		for (File gameFile : games) {
 			Game game = new Game();
-			game.setName(gameFile.getName());
-			game.setGamePath(gameFile.getAbsolutePath());
+//			1.解析游戏apk的配置文件
+			Apk apk = generateApkFromConfig(gameFile);
+			game.setApk(apk);
+			
+//			2.解析channel的配置文件
+			Channel channel = generateChannelFromConfig(gameFile);
+			game.setChannel(channel);
+//			3.解析keystore的配置文件
+			Keystore keystore = generateKeystoreFromConfig(gameFile);
+			
+			game.setKeystore(keystore);
 			gameList.add(game);
 		}
+		
 		return gameList;
 	}
+
+	/**
+	 * 从配置文件中生成Keystore对象
+	 * @param gameFile
+	 * @return
+	 */
+	private static Keystore generateKeystoreFromConfig(File gameFile) {
+		Keystore keystore = new Keystore();
+		String keystoreConfigPath=gameFile.getAbsolutePath()+MyPackageFrame.FILE_SEPRATOR+"keystore"+MyPackageFrame.FILE_SEPRATOR+"keystore.xml";
+		
+		SAXReader saxReader = new SAXReader();
+		Document document;
+		try {
+			document = saxReader.read(new File(keystoreConfigPath));
+			Element keystoreElement = document.getRootElement();
+			String password = keystoreElement.attributeValue("password");
+			String alias = keystoreElement.attributeValue("alias");
+			String aliasPassword = keystoreElement.attributeValue("aliasPassword");
+			keystore.setPassword(password);
+			keystore.setAliasPassword(aliasPassword);
+			keystore.setAlias(alias);
+			keystore.setKeystorePath(gameFile.getAbsolutePath()+MyPackageFrame.FILE_SEPRATOR+"keystore"+MyPackageFrame.FILE_SEPRATOR+gameFile.getName()+".keystore");
+		} catch (DocumentException e) {
+			e.printStackTrace();
+		}
+		return keystore;
+	}
+
+	/**
+	 * 从配置文件中生成Channel对象
+	 * @param gameFile
+	 * @return
+	 */
+	private static Channel generateChannelFromConfig(File gameFile) {
+		Channel channel = new Channel();
+		String channelConfigPath=gameFile.getAbsolutePath()+MyPackageFrame.FILE_SEPRATOR+"channel"+MyPackageFrame.FILE_SEPRATOR+"channel.xml";
+		ArrayList<Map<String, String>> channelsData = new ArrayList<Map<String,String>>();
+		SAXReader saxReader = new SAXReader();
+		try {
+			Document reader = saxReader.read(new File(channelConfigPath));
+			Element rootElement = reader.getRootElement();
+			List<Element> channelList = rootElement.elements("channel");
+			for (Element channelTemp : channelList) {
+				HashMap<String,String> channelMap = new HashMap<>();
+				List<Attribute> attributes = channelTemp.attributes();
+				for (Attribute attribute : attributes) {
+					channelMap.put(attribute.getName(), attribute.getValue());
+				}
+				channelsData.add(channelMap);
+			}
+			channel.setChannelList(channelsData);
+		} catch (DocumentException e) {
+			e.printStackTrace();
+		}
+		return channel;
+	}
+
+	/**
+	 * 从配置文件中生成Apk对象
+	 * @param gameFile
+	 * @return
+	 * @throws DocumentException
+	 */
+	private static Apk generateApkFromConfig(File gameFile) {
+		Apk apk = new Apk();
+		try {
+			String apkConfigPath=gameFile.getAbsoluteFile()+MyPackageFrame.FILE_SEPRATOR+"apk"+MyPackageFrame.FILE_SEPRATOR+"apk.xml";
+			SAXReader saxReader = new SAXReader();
+			Document document = saxReader.read(new File(apkConfigPath));
+			Element apkElement = document.getRootElement();
+			String apkName = apkElement.attributeValue("name");
+			String fullName = apkElement.attributeValue("fullName");
+			String desc = apkElement.attributeValue("desc");
+			apk.setName(apkName);
+			apk.setFullName(fullName);
+			apk.setDesc(desc);
+			apk.setApkPath(gameFile.getAbsolutePath()+MyPackageFrame.FILE_SEPRATOR+"apk"+MyPackageFrame.FILE_SEPRATOR+apkName+".apk");
+		} catch (DocumentException e) {
+			e.printStackTrace();
+		}
+		return apk;
+	}
+	
+	
 }

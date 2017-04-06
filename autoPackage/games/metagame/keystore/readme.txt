@@ -1,3 +1,3 @@
 password:metagame
-alias:themelove
+alias:metagame
 aliasPassword:metagame

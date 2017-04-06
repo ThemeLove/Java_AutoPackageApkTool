@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <channels>
-	<channel PptvVasSdk_CID="224" PptvVasSdk_CCID="" value="true"/>
-	<channel PptvVasSdk_CID="225" PptvVasSdk_CCID="" value="true"/>
-	<channel PptvVasSdk_CID="187" PptvVasSdk_CCID="316" value="true"/>
+	<channel PptvVasSdk_CID="224" PptvVasSdk_CCID="" PptvVasSdk_DebugMode="true"/>
+	<channel PptvVasSdk_CID="225" PptvVasSdk_CCID="" PptvVasSdk_DebugMode="false"/>
+	<channel PptvVasSdk_CID="187" PptvVasSdk_CCID="316" PptvVasSdk_DebugMode="true"/>
 </channels>
