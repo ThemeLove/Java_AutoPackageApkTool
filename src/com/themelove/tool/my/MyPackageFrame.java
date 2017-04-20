@@ -8,10 +8,12 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -408,95 +410,97 @@ public class MyPackageFrame extends JFrame {
 		System.out.println("步骤四：根据渠道号循环打包...");
 		
 //		1.修改meta元数据
-		for (Map<String, String> channelMap : currentChannel.getChannelList()) {
-			System.out.println("准备打---" + channelMap + "---渠道包---");
-			System.out.println("	(1):---正在修改meta对应的元数据...");
-
-			StringBuffer channel = new StringBuffer();
-			
-			// AndroidManifest.xml文件目录
-			String manifestPath = TEMP_PATH + FILE_SEPRATOR+ "AndroidManifest.xml";
-			SAXReader saxReader = new SAXReader();
-			try {
-				Document document = saxReader.read(new File(manifestPath));
-				Element rootElement = document.getRootElement();
-				List<Element> metas = rootElement.element("application").elements("meta-data");
-				for (Element meta : metas) {
-					for (String name : channelMap.keySet()) {
-						if (name.equals(meta.attributeValue("name"))) {
-							meta.remove(meta.attribute("value"));
-							meta.addAttribute("value", channelMap.get(name));
-							channel.append("_").append(channelMap.get(name));
+			for (Map<String, String> channelMap : currentChannel.getChannelList()) {
+				System.out.println("准备打---" + channelMap + "---渠道包---");
+				System.out.println("	(1):---正在修改meta对应的元数据...");
+	
+				StringBuffer channel = new StringBuffer();
+				// AndroidManifest.xml文件目录
+				String manifestPath = TEMP_PATH + FILE_SEPRATOR+ "AndroidManifest.xml";
+				SAXReader saxReader = new SAXReader();
+				try {
+					Document document = saxReader.read(new File(manifestPath));
+					Element rootElement = document.getRootElement();
+					List<Element> metas = rootElement.element("application").elements("meta-data");
+					for (Element meta : metas) {
+						for (String name : channelMap.keySet()) {
+							if (name.equals(meta.attributeValue("name"))) {
+								meta.remove(meta.attribute("value"));
+								meta.addAttribute("android:value", channelMap.get(name));
+								channel.append("_").append(channelMap.get(name));
+							}
 						}
 					}
+					 OutputFormat xmlFormat = new OutputFormat("    ", true, "UTF-8");
+					
+				    XMLWriter writer = new XMLWriter(new FileWriter(new File(manifestPath)), xmlFormat);
+	                writer.write(document);
+	                writer.close();
+				} catch (Exception e) {
+	
 				}
-				 OutputFormat xmlFormat = new OutputFormat("    ", true, "UTF-8");
+				System.out.println("修改meta成功");
+	//			2.根据当前选择的apktool版本用apktool.jar给修改过渠道号的资源汇编成一个未签名的apk
+				System.out.println("	(2):---正在回编成一个未签名的apk...");
+				String unSignApkPath=BASE_OUT_PATH+FILE_SEPRATOR+currentApk.getName()+FILE_SEPRATOR+currentApk.getName()+"_unsign.apk";
+				File apktoolFile = new File(currentApktoolVersion.getPath());
+	//			未签名apk的保存路径
+				String generateUnSignApkCommand = TextUtil.formatString("java -jar apktool.jar b -o %s %s", new String[] {unSignApkPath, TEMP_PATH});
+				CmdUtil.exeCmdWithLog(generateUnSignApkCommand, null, apktoolFile);
+				System.out.println("生成未签名:"+currentApk.getName()+"_unsign.apk"+"成功！");
 				
-			    XMLWriter writer = new XMLWriter(new FileWriter(new File(manifestPath)), xmlFormat);
-                writer.write(document);
-                writer.close();
-			} catch (Exception e) {
-
-			}
-			System.out.println("修改meta成功");
-//			2.根据当前选择的apktool版本用apktool.jar给修改过渠道号的资源汇编成一个未签名的apk
-			System.out.println("	(2):---正在回编成一个未签名的apk...");
-			String unSignApkPath=BASE_OUT_PATH+FILE_SEPRATOR+currentApk.getName()+FILE_SEPRATOR+currentApk.getName()+"_unsign.apk";
-			File apktoolFile = new File(currentApktoolVersion.getPath());
-//			未签名apk的保存路径
-			String generateUnSignApkCommand = TextUtil.formatString("java -jar apktool.jar b -o %s %s", new String[] {unSignApkPath, TEMP_PATH});
-			CmdUtil.exeCmdWithLog(generateUnSignApkCommand, null, apktoolFile);
-			System.out.println("生成未签名:"+currentApk.getName()+"_unsign.apk"+"成功！");
-			
-//			3.用jarsigner.jar给未签名apk签名
-			File unSignApkFile = new File(unSignApkPath);
-			
-			if (!unSignApkFile.exists()) {
-				System.out.println("没有找到---未签名---的渠道包");
-				return;
-			}
-			String keystorePath=currentKeystore.getKeystorePath();
-			String signApkPath=BASE_OUT_PATH+FILE_SEPRATOR+currentApk.getName()+FILE_SEPRATOR+currentApk.getName()+"_sign.apk";
-//			String jarsignerPath=currentApktoolVersion.getPath()+FILE_SEPRATOR+"jarsigner.exe";
-//			String jarsignerPath="E:/Develop/jdk1.8/bin/jarsigner.exe";
-			String jarsignerPath="D:/jdk/bin/jarsigner.exe";
-			String generateSignApkCommand = TextUtil.formatString("%s -digestalg SHA1 -sigalg SHA1withRSA -keystore %s -storepass %s -keypass %s -signedjar %s %s %s",
-                    new String[] {jarsignerPath,keystorePath, currentKeystore.getPassword(), currentKeystore.getAliasPassword(), signApkPath,
-					unSignApkPath,currentKeystore.getAlias()});
-			System.out.println("generateSignApkCommand:---"+generateSignApkCommand);
-//			CmdUtil.exeCmd(generateSignApkCommand, null, apktoolFile);
-			CmdUtil.exeCmdWithLog(generateSignApkCommand);
-			System.out.println("生成签名---"+currentApk.getName()+"_sign.apk---成功");
-//			删除之前的未签名包
-//			FileUtil.deleteFile(new File(unSignApkPath));
-			
-			File signApkFile = new File(signApkPath);
-			
-			if (!signApkFile.exists()) {
-				System.out.println("没有找到---签名---的渠道包");
-				return;
-			}
-			
-//			4.对已签名包对其优化
-			String channelApkPath=BASE_OUT_PATH+FILE_SEPRATOR+currentApk.getName()+FILE_SEPRATOR+currentApk.getName()+channel.toString()+".apk";
-			
-			String zipalignPath=currentApktoolVersion.getPath()+FILE_SEPRATOR+"zipalign.exe";
-			String generateChannelApkCommand = TextUtil.formatString("%s -v 4 %s %s", new String[] {zipalignPath,signApkPath, channelApkPath});
-//			CmdUtil.exeCmd(generateSignApkCommand, null, apktoolFile);
-			CmdUtil.exeCmdWithLog(generateChannelApkCommand);
-			System.out.println("生成最终渠道包---"+currentApk.getName()+channel.toString()+".apk---成功");
-			
-			File channelApkFile = new File(channelApkPath);
-			
-			
-			if (!channelApkFile.exists()) {
-				System.out.println("没有找到---最终的---渠道包");
-				return;
+	//			3.用jarsigner.jar给未签名apk签名
+				File unSignApkFile = new File(unSignApkPath);
+				
+				if (!unSignApkFile.exists()) {
+					System.out.println("没有找到---未签名---的渠道包");
+					return;
+				}
+				System.out.println("	(3):---正在签名apk...");
+				String keystorePath=currentKeystore.getKeystorePath();
+				String signApkPath=BASE_OUT_PATH+FILE_SEPRATOR+currentApk.getName()+FILE_SEPRATOR+currentApk.getName()+"_sign.apk";
+	//			String jarsignerPath=currentApktoolVersion.getPath()+FILE_SEPRATOR+"jarsigner.exe";
+	//			String jarsignerPath="E:/Develop/jdk1.8/bin/jarsigner.exe";
+				String jarsignerPath="D:/jdk/bin/jarsigner.exe";
+				String generateSignApkCommand = TextUtil.formatString("%s -digestalg SHA1 -sigalg SHA1withRSA -keystore %s -storepass %s -keypass %s -signedjar %s %s %s",
+	                    new String[] {jarsignerPath,keystorePath, currentKeystore.getPassword(), currentKeystore.getAliasPassword(), signApkPath,
+						unSignApkPath,currentKeystore.getAlias()});
+				System.out.println("generateSignApkCommand:---"+generateSignApkCommand);
+	//			CmdUtil.exeCmd(generateSignApkCommand, null, apktoolFile);
+				CmdUtil.exeCmdWithLog(generateSignApkCommand);
+				System.out.println("生成签名---"+currentApk.getName()+"_sign.apk---成功");
+	//			删除之前的未签名包
+	//			FileUtil.deleteFile(new File(unSignApkPath));
+				
+				File signApkFile = new File(signApkPath);
+				
+				if (!signApkFile.exists()) {
+					System.out.println("没有找到---签名---的渠道包");
+					return;
+				}
+				
+	//			4.对已签名包对其优化
+				String channelApkPath=BASE_OUT_PATH+FILE_SEPRATOR+currentApk.getName()+FILE_SEPRATOR+currentApk.getName()+channel.toString()+".apk";
+				System.out.println("	(4)---:对齐优化签名包...");
+				String zipalignPath=currentApktoolVersion.getPath()+FILE_SEPRATOR+"zipalign.exe";
+				String generateChannelApkCommand = TextUtil.formatString("%s -v 4 %s %s", new String[] {zipalignPath,signApkPath, channelApkPath});
+	//			CmdUtil.exeCmd(generateSignApkCommand, null, apktoolFile);
+				CmdUtil.exeCmdWithLog(generateChannelApkCommand);
+				System.out.println("生成最终渠道包---"+currentApk.getName()+channel.toString()+".apk---成功");
+				
+				File channelApkFile = new File(channelApkPath);
+				
+				
+				if (!channelApkFile.exists()) {
+					System.out.println("没有找到---最终的---渠道包");
+					return;
+				}
+				
+	//			删除之前签名包
+				FileUtil.deleteFile(new File(signApkPath));
 			}
 			
-//			删除之前签名包
-			FileUtil.deleteFile(new File(signApkPath));
-			}
+			System.out.println("循环打包完成。。。");
 		}
 
 	/**
@@ -613,7 +617,228 @@ public class MyPackageFrame extends JFrame {
 	 * Asset配置文件 打包方式
 	 */
 	private void assetPackageChannels(){
+		assetStep1Init();
+		assetStep2CopyApk2BakAndTemp();
+		assetStep3LoopPackageWithChannels();
+	}
+	
+	/**
+	 * asset 资产目录打包方式 step Init
+	 */
+	private void assetStep1Init() {
+		System.out.println("开始打包...");
+		System.out.println("打包方式:---"+currentPackageMethod.getDesc());
+		System.out.println(LINE_SEPRATOR+LINE_SEPRATOR+LINE_SEPRATOR);
+		System.out.println("步骤一:---初始化");
 		
+		System.out.println("	(1):---正在检查游戏母包是否存在...");
+//		1.检查母包是否存在
+		gameApkPath = currentApk.getApkPath();
+		File apkFile = new File(gameApkPath);
+		
+		if (apkFile.exists()){
+			System.out.println("	游戏---"+currentApk.getName()+"---母包存在");
+		} else{
+			System.out.println("	游戏---"+currentApk.getName()+"---母包不存在,请检查后重试...");
+			return;
+		}
+		
+//		2.检查打包渠道是否存在
+		System.out.println();
+		System.out.println("	(2):---正在检查打包渠道是否存在...");
+		if (currentChannel.getChannelList()==null||currentChannel.getChannelList().size()==0) {
+			System.out.println("	打包渠道不存在，请检查...");
+			return;
+		}
+		System.out.println("	打包渠道存在...");
+		
+//		3.清空打包过程中用到的目录
+		System.out.println();
+		System.out.println("	(3):清空打包过程中用到的目录...");
+		
+		File bakDir = new File(BAK_PATH);
+		File tempDir = new File(TEMP_PATH);
+		File gameOutDir = new File(BASE_OUT_PATH+FILE_SEPRATOR+currentApk.getName());
+		
+		boolean deleteBakDir = FileUtil.deleteFiles(bakDir);
+		if (deleteBakDir) {
+			System.out.println("	清空bak目录成功...");
+		}else{
+			System.out.println("	清空bak目录不成功，请手动清空后重试...");
+			return;
+		}
+		
+		boolean deleteTempDir = FileUtil.deleteFiles(tempDir);
+		if (deleteTempDir) {
+			System.out.println("	清空temp目录成功...");
+		}else{
+			System.out.println("	清空temp目录不成功，请手动清空后重试...");
+			return;
+		}
+		
+		boolean deleteGameOutDir = FileUtil.deleteFiles(gameOutDir);
+		if (deleteGameOutDir) {
+			System.out.println("	清空---"+currentApk.getName()+"---out目录成功...");
+		}else{
+			System.out.println("	清空---"+currentApk.getName()+"---out目录成功,请手动清空后重试...");
+			return;
+		}
+//		4.添加公共资源依赖
+		System.out.println();
+		System.out.println("	(4)添加公共资源---framework-res.apk---依赖...");
+		CmdUtil.exeCmdWithLog("java -jar -Xms512m -Xmx512m apktool.jar if framework-res.apk",null, new File(currentApktoolVersion.getPath()));
+		System.out.println("	添加公共资源---framework-res.apk---依赖成功");
+		
+	}
+	/**
+	 * 拷贝apk到Bak目录和Temp目录
+	 */
+	private void assetStep2CopyApk2BakAndTemp() {
+		System.out.println(LINE_SEPRATOR+LINE_SEPRATOR+LINE_SEPRATOR);
+		System.out.println("步骤二：---copy母包apk到bak和temp目录");		
+		File sourceApk = new File(currentApk.getApkPath());
+		File bakApk = new File(BAK_PATH+FILE_SEPRATOR+currentApk.getName()+".apk");
+		File tempApk = new File(TEMP_PATH+FILE_SEPRATOR+currentApk.getName()+".apk");
+		boolean copyBak = FileUtil.copyFile(sourceApk, bakApk);
+		if (copyBak) {
+			System.out.println("	copy母包apk到bak目录成功");
+		}else{
+			System.out.println("	copy母包apk到bak目录失败...,请重试！");
+			return;
+		}
+		
+		boolean copyTemp = FileUtil.copyFile(sourceApk, tempApk);
+		if (copyTemp) {
+			System.out.println("	copy母包apk到Temp目录成功");
+		}else{
+			System.out.println("	copy母包apk到Temp目录失败，请重试！");
+			return;
+		}
+	}
+	/**
+	 * 循环生成配置文件多渠道打包
+	 */
+	@SuppressWarnings("resource")
+	private void assetStep3LoopPackageWithChannels() {
+		System.out.println(LINE_SEPRATOR+LINE_SEPRATOR+LINE_SEPRATOR);
+		System.out.println("步骤三：---根据渠道循环打包...");		
+		for (Map<String,String> channelMap : currentChannel.getChannelList()) {
+			System.out.println("准备打---" + channelMap + "---渠道包---");
+			System.out.println("	(1):---根据渠道信息生成assets\\vasconfig\\channel.ini文件");
+			
+			File channelConfigFile = new File(TEMP_PATH+FILE_SEPRATOR+"assets"+FILE_SEPRATOR+"vasconfig"+FILE_SEPRATOR+"channel.ini");
+			if (!channelConfigFile.getParentFile().exists()) {
+				channelConfigFile.getParentFile().mkdirs();
+			}
+			try {
+			boolean createConfig = channelConfigFile.createNewFile();
+			if (createConfig) {
+						BufferedWriter bw = new BufferedWriter(new FileWriter(channelConfigFile));
+	//					以下拼接只适合Pptv渠道
+						StringBuffer sb = new StringBuffer();
+						sb.append("#")
+						.append(channelMap.get("PptvVasSdk_CID"))
+						.append(LINE_SEPRATOR)
+						.append("#")
+						.append(channelMap.get("PptvVasSdk_CCID"))
+						.append(LINE_SEPRATOR)
+						.append("#")
+						.append(channelMap.get("PptvVasSdk_DebugMode"));
+						bw.write(sb.toString());
+						bw.flush();
+						bw.close();
+						System.out.println("	生成"+channelMap+"渠道信息到assets\\vasconfig\\channel.ini文件成功！");
+					}else{
+						System.out.println("	创建assets\\vasconfig\\channel.ini文件失败！请重试...");
+						return;
+					}
+				} catch (IOException e) {
+					e.printStackTrace();
+					System.out.println("	生成"+channelMap+"渠道信息到assets\\vasconfig\\channel.ini文件失败！请重试...");
+					return;
+				}
+			
+//			用生成的assets\\vasconfig\\channel.ini配置文件替换，temp目录中apk中assets\vasconfig\channel.ini文件，因为apk中assets目录下的文件，打包过程中的不做特殊编译处理，
+//			所以这个过程不用反编译，直接用jdk 的jar命名即可完成
+			System.out.println("	(2):---用生成的渠道配置文件channel.ini替换apk中的配置文件");
+			String jarPath=currentApktoolVersion.getPath()+FILE_SEPRATOR+"jar.exe";
+			String tempApkPath=currentApk.getName()+".apk";
+//			注意这里要用"/"
+			String configPath="assets/vasconfig/channel.ini";
+//			exeCommandPath代表切换到该目录下执行jar命令
+			String exeCommandPath=TEMP_PATH;
+			String updateChannelCommand = String.format("%s uvf %s %s", new String[]{jarPath,tempApkPath,configPath});
+//			String updateChannelCommand = String.format("%s uvf %s %s", new String[]{jarPath,tempApkPath,configPath});
+			System.out.println(updateChannelCommand);
+//			CmdUtil.exeCmdWithLog(updateChannelCommand);
+			CmdUtil.exeCmdWithLog(updateChannelCommand, null, new File(TEMP_PATH));
+			System.out.println("	渠道配置文件channel.ini替换apk中的配置文件成功！");
+			
+//			删除之前的apk中的签名目录 META-INF
+			
+			
+			//3.用jarsigner.jar给未签名apk签名，应为apk中文件被更新了，所以要重新签名
+			System.out.println("	(3):---正在签名apk...");
+			String unSignApkPath=TEMP_PATH+FILE_SEPRATOR+currentApk.getName()+".apk";
+			File unSignApkFile = new File(unSignApkPath);
+			
+			if (!unSignApkFile.exists()) {
+				System.out.println("没有找到---未签名---的渠道包");
+				return;
+			}
+			String keystorePath=currentKeystore.getKeystorePath();
+			String signApkPath=BASE_OUT_PATH+FILE_SEPRATOR+currentApk.getName()+FILE_SEPRATOR+currentApk.getName()+"_sign.apk";
+//			String jarsignerPath=currentApktoolVersion.getPath()+FILE_SEPRATOR+"jarsigner.exe";
+//			String jarsignerPath="E:/Develop/jdk1.8/bin/jarsigner.exe";
+			String jarsignerPath="D:/jdk/bin/jarsigner.exe";
+			String generateSignApkCommand = TextUtil.formatString("%s -digestalg SHA1 -sigalg SHA1withRSA -keystore %s -storepass %s -keypass %s -signedjar %s %s %s",
+                    new String[] {jarsignerPath,keystorePath, currentKeystore.getPassword(), currentKeystore.getAliasPassword(), signApkPath,
+					unSignApkPath,currentKeystore.getAlias()});
+			System.out.println("generateSignApkCommand:---"+generateSignApkCommand);
+//			CmdUtil.exeCmd(generateSignApkCommand, null, apktoolFile);
+			CmdUtil.exeCmdWithLog(generateSignApkCommand);
+			System.out.println("生成签名---"+currentApk.getName()+"_sign.apk---成功");
+//			删除之前的未签名包
+//			FileUtil.deleteFile(new File(unSignApkPath));
+			
+//			4.对已签名包对其优化
+			System.out.println("	(4)---:对齐优化签名包...");
+			File signApkFile = new File(signApkPath);
+			if (!signApkFile.exists()) {
+				System.out.println("没有找到---签名---的渠道包");
+				return;
+			}
+			
+			StringBuffer channel = new StringBuffer();
+			channel.append("_")
+			.append(channelMap.get("PptvVasSdk_CID"))
+			.append("_")
+			.append(channelMap.get("PptvVasSdk_CCID"))
+			.append("_")
+			.append(channelMap.get("PptvVasSdk_DebugMode"));
+			
+			String channelApkPath=BASE_OUT_PATH+FILE_SEPRATOR+currentApk.getName()+FILE_SEPRATOR+currentApk.getName()+channel.toString()+".apk";
+			String zipalignPath=currentApktoolVersion.getPath()+FILE_SEPRATOR+"zipalign.exe";
+			String generateChannelApkCommand = TextUtil.formatString("%s -v 4 %s %s", new String[] {zipalignPath,signApkPath, channelApkPath});
+//			CmdUtil.exeCmd(generateSignApkCommand, null, apktoolFile);
+			CmdUtil.exeCmdWithLog(generateChannelApkCommand);
+			System.out.println("生成最终渠道包---"+currentApk.getName()+channel.toString()+".apk---成功");
+			
+			File channelApkFile = new File(channelApkPath);
+			
+			
+			if (!channelApkFile.exists()) {
+				System.out.println("没有找到---最终的---渠道包");
+				return;
+			}
+			
+//			删除之前签名包
+			FileUtil.deleteFile(new File(signApkPath));
+//			删除渠道配置文件channel.ini文件
+			FileUtil.deleteFile(new File(channelConfigFile.getAbsolutePath()));
+		}
+			
+		System.out.println("循环打包完成。。。");
 	}
 	
 	/**
