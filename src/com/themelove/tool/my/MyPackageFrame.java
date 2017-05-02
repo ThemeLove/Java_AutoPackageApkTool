@@ -19,6 +19,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipException;
+import java.util.zip.ZipFile;
+import java.util.zip.ZipOutputStream;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -689,6 +693,19 @@ public class MyPackageFrame extends JFrame {
 		CmdUtil.exeCmdWithLog("java -jar -Xms512m -Xmx512m apktool.jar if framework-res.apk",null, new File(currentApktoolVersion.getPath()));
 		System.out.println("	添加公共资源---framework-res.apk---依赖成功");
 		
+//		5.创建META-INF空目录
+		System.out.println();
+		System.out.println("    (5)创建META-INF空目录");
+		String metaInfoDirPath=TEMP_PATH+FILE_SEPRATOR+"META-INF";
+		File file = new File(metaInfoDirPath);
+		boolean createMetaInfoDir = file.mkdirs();
+		if (createMetaInfoDir) {
+			System.out.println("	创建META-INF空目录成功...");
+		}else{
+			System.out.println("	error:创建META-INF空目录失败，请重试");
+			return;
+		}
+		
 	}
 	/**
 	 * 拷贝apk到Bak目录和Temp目录
@@ -767,19 +784,28 @@ public class MyPackageFrame extends JFrame {
 			String configPath="assets/vasconfig/channel.ini";
 //			exeCommandPath代表切换到该目录下执行jar命令
 			String exeCommandPath=TEMP_PATH;
+//			String updateChannelCommand = String.format("%s uvfm %s %s", new String[]{jarPath,tempApkPath,configPath});
 			String updateChannelCommand = String.format("%s uvf %s %s", new String[]{jarPath,tempApkPath,configPath});
-//			String updateChannelCommand = String.format("%s uvf %s %s", new String[]{jarPath,tempApkPath,configPath});
 			System.out.println(updateChannelCommand);
 //			CmdUtil.exeCmdWithLog(updateChannelCommand);
 			CmdUtil.exeCmdWithLog(updateChannelCommand, null, new File(TEMP_PATH));
 			System.out.println("	渠道配置文件channel.ini替换apk中的配置文件成功！");
 			
-//			删除之前的apk中的签名目录 META-INF
+//			删除之前的apk中的签名目录 META-INF,用空文件代替,因为jar命名没有直接删除的命令行，这里用7Zip来操作
+			System.out.println("	(3)7zip删除Meta中的目录...");
+			String sevenZipPath=BASE_TOOLS_PATH+FILE_SEPRATOR+"7zip"+FILE_SEPRATOR+"7z.exe";
+			String unSignApkPath=TEMP_PATH+FILE_SEPRATOR+currentApk.getName()+".apk";
+			String metaInfPath="META-INF";
+			String deleteMetaINFCommand=String.format("%s a %s %s",new String[]{sevenZipPath,unSignApkPath,metaInfPath});
+			CmdUtil.exeCmdWithLog(deleteMetaINFCommand, null, new File(TEMP_PATH));
 			
+/*			String replaceMetaInfCommand = String.format("%s uvf %s %s",new String[]{jarPath,tempApkPath,metaInfPath});
+			CmdUtil.exeCmdWithLog(replaceMetaInfCommand, null, new File(TEMP_PATH));
+			System.out.println("	META-INF替换apk中的META-INF成功...");*/
 			
 			//3.用jarsigner.jar给未签名apk签名，应为apk中文件被更新了，所以要重新签名
-			System.out.println("	(3):---正在签名apk...");
-			String unSignApkPath=TEMP_PATH+FILE_SEPRATOR+currentApk.getName()+".apk";
+			System.out.println("	(4):---正在签名apk...");
+//			String unSignApkPath=TEMP_PATH+FILE_SEPRATOR+currentApk.getName()+".apk";
 			File unSignApkFile = new File(unSignApkPath);
 			
 			if (!unSignApkFile.exists()) {
@@ -802,7 +828,7 @@ public class MyPackageFrame extends JFrame {
 //			FileUtil.deleteFile(new File(unSignApkPath));
 			
 //			4.对已签名包对其优化
-			System.out.println("	(4)---:对齐优化签名包...");
+			System.out.println("	(5)---:对齐优化签名包...");
 			File signApkFile = new File(signApkPath);
 			if (!signApkFile.exists()) {
 				System.out.println("没有找到---签名---的渠道包");
