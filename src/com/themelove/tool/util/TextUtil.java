@@ -19,4 +19,10 @@ public class TextUtil {
 	public static String formatString(String format,String... args){
 		return String.format(Locale.getDefault(), format, args);
 	}
+	public static boolean isEmpty(String str){
+		if (str==null) {
+			return true;
+		}
+		return str.isEmpty();
+	}
 }

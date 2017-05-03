@@ -41,7 +41,7 @@ public class Model {
 		
 		PackageMethod quickMethod = new PackageMethod();
 		quickMethod.setMethod(PackageMethod.METHOD_QUICK);
-		quickMethod.setDesc("方式三：修改签名目录");
+		quickMethod.setDesc("方式三：快速打包-修改签名目录META-INF");
 		
 		packageMethodList.add(metaMethod);
 		packageMethodList.add(assetMethod);
@@ -124,9 +124,14 @@ public class Model {
 	 * @return
 	 */
 	private static Keystore generateKeystoreFromConfig(File gameFile) {
-		Keystore keystore = new Keystore();
-		String keystoreConfigPath=gameFile.getAbsolutePath()+MyPackageFrame.FILE_SEPRATOR+"keystore"+MyPackageFrame.FILE_SEPRATOR+"keystore.xml";
 		
+		String keystoreConfigPath=gameFile.getAbsolutePath()+MyPackageFrame.FILE_SEPRATOR+"keystore"+MyPackageFrame.FILE_SEPRATOR+"keystore.xml";
+		File keystoreConfigFile = new File(keystoreConfigPath);
+		if (!keystoreConfigFile.exists()) {
+			return null;
+		}
+		
+		Keystore keystore=new Keystore();
 		SAXReader saxReader = new SAXReader();
 		Document document;
 		try {
