@@ -367,8 +367,6 @@ public class MyPackageFrame extends JFrame {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				
-				
-				
 //				根据打包方式多渠道打包
 				switch (currentPackageMethod.getMethod()) {
 				case PackageMethod.METHOD_META:
@@ -387,8 +385,6 @@ public class MyPackageFrame extends JFrame {
 					break;
 				}
 				
-//				真正多渠道打包
-				autoPackageChannels();
 			}
 
 		});
@@ -692,20 +688,6 @@ public class MyPackageFrame extends JFrame {
 		System.out.println("	(4)添加公共资源---framework-res.apk---依赖...");
 		CmdUtil.exeCmdWithLog("java -jar -Xms512m -Xmx512m apktool.jar if framework-res.apk",null, new File(currentApktoolVersion.getPath()));
 		System.out.println("	添加公共资源---framework-res.apk---依赖成功");
-		
-//		5.创建META-INF空目录
-		System.out.println();
-		System.out.println("    (5)创建META-INF空目录");
-		String metaInfoDirPath=TEMP_PATH+FILE_SEPRATOR+"META-INF";
-		File file = new File(metaInfoDirPath);
-		boolean createMetaInfoDir = file.mkdirs();
-		if (createMetaInfoDir) {
-			System.out.println("	创建META-INF空目录成功...");
-		}else{
-			System.out.println("	error:创建META-INF空目录失败，请重试");
-			return;
-		}
-		
 	}
 	/**
 	 * 拷贝apk到Bak目录和Temp目录
@@ -796,7 +778,7 @@ public class MyPackageFrame extends JFrame {
 			String sevenZipPath=BASE_TOOLS_PATH+FILE_SEPRATOR+"7zip"+FILE_SEPRATOR+"7z.exe";
 			String unSignApkPath=TEMP_PATH+FILE_SEPRATOR+currentApk.getName()+".apk";
 			String metaInfPath="META-INF";
-			String deleteMetaINFCommand=String.format("%s a %s %s",new String[]{sevenZipPath,unSignApkPath,metaInfPath});
+			String deleteMetaINFCommand=String.format("%s d %s %s",new String[]{sevenZipPath,unSignApkPath,metaInfPath});
 			CmdUtil.exeCmdWithLog(deleteMetaINFCommand, null, new File(TEMP_PATH));
 			
 /*			String replaceMetaInfCommand = String.format("%s uvf %s %s",new String[]{jarPath,tempApkPath,metaInfPath});
@@ -868,7 +850,7 @@ public class MyPackageFrame extends JFrame {
 	}
 	
 	/**
-	 * 快速 打包方式
+	 * 快速 打包方式(美团方式，META-INF目录下新增空文件，空文件名标示渠道号)
 	 */
 	private void quickPackageChannels(){
 		
@@ -1025,19 +1007,6 @@ public class MyPackageFrame extends JFrame {
 			e.printStackTrace();
 		}
 		return channelsData;
-	}
-	
-	/**
-	 * 多渠道循环自动打包
-	 */
-	protected void autoPackageChannels() {
-//		一：初始化
-//		Step1_init();
-//		二：根据打包方式，反编译或者解压母包到bak目录
-//		三：拷贝bak目录到temp目录
-//		step3_copyBak2Temp();
-//		四：根据打包方式，循环修改渠道号
-//		step4_loopPackageWithChannels();
 	}
 
 /*	
