@@ -7,13 +7,9 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -32,7 +28,6 @@ import javax.swing.JTextArea;
 import javax.swing.JTextPane;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
-import javax.swing.plaf.basic.BasicInternalFrameTitlePane.RestoreAction;
 
 import org.dom4j.Attribute;
 import org.dom4j.Document;
@@ -41,7 +36,6 @@ import org.dom4j.Element;
 import org.dom4j.io.OutputFormat;
 import org.dom4j.io.SAXReader;
 import org.dom4j.io.XMLWriter;
-import org.python.apache.xerces.parsers.XMLParser;
 
 import com.themelove.tool.gui.MyEditComboBox;
 import com.themelove.tool.my.bean.Apk;
@@ -355,10 +349,14 @@ public class MyPackageFrame extends JFrame {
 				currentApktoolVersion=null;
 				currentGame=null;
 				replaceMetaPane.setText("");
+				
 				metaList.clear();
 				channelsInfo.setText("");
 				resultInfo.setText("");
 				packageBtn.setEnabled(false);
+				
+				initData();
+				replaceMetaPane.setText(replaceMetaSb.toString());
 			}
 		});
 		
@@ -567,7 +565,6 @@ public class MyPackageFrame extends JFrame {
 			return;
 		}
 		String[] split = replaceMetaStr.split("#");
-		metaList = new ArrayList<String>();
 		for (String metaStr : split) {
 			if (!metaStr.isEmpty()) {
 				metaList.add(metaStr);
@@ -618,7 +615,7 @@ public class MyPackageFrame extends JFrame {
 	 */
 	private void assetPackageChannels(){
 		assetStep1Init();
-		assetStep2CopyApk2BakAndTemp();
+		copyApk2BakAndTemp();
 		assetStep3LoopPackageWithChannels();
 	}
 	
@@ -692,7 +689,7 @@ public class MyPackageFrame extends JFrame {
 	/**
 	 * 拷贝apk到Bak目录和Temp目录
 	 */
-	private void assetStep2CopyApk2BakAndTemp() {
+	private void copyApk2BakAndTemp() {
 		System.out.println(LINE_SEPRATOR+LINE_SEPRATOR+LINE_SEPRATOR);
 		System.out.println("步骤二：---copy母包apk到bak和temp目录");		
 		File sourceApk = new File(currentApk.getApkPath());
@@ -850,12 +847,156 @@ public class MyPackageFrame extends JFrame {
 	}
 	
 	/**
+<<<<<<< HEAD
 	 * 快速 打包方式(美团方式，META-INF目录下新增空文件，空文件名标示渠道号)
+=======
+	 * 快速 打包方式：修改apk中META-INF目录，在其中新增空文件，文件名用来表示渠道信息
+>>>>>>> 43af157b8f7aeab01cf190b20ad9abf027bc2a08
 	 */
 	private void quickPackageChannels(){
+		quickStep1Init();
+		copyApk2BakAndTemp();
+		quickStep3LoopPackageWithChannels();
+	}
+
+	/**
+	 * 快速打包方式：Step1 init
+	 */
+	private void quickStep1Init() {
+		System.out.println("开始打包...");
+		System.out.println("打包方式:---"+currentPackageMethod.getDesc());
+		System.out.println(LINE_SEPRATOR+LINE_SEPRATOR+LINE_SEPRATOR);
+		System.out.println("步骤一:---初始化");
 		
+		System.out.println("	(1):---正在检查游戏母包是否存在...");
+//		1.检查母包是否存在
+		gameApkPath = currentApk.getApkPath();
+		File apkFile = new File(gameApkPath);
+		
+		if (apkFile.exists()){
+			System.out.println("	游戏---"+currentApk.getName()+"---母包存在");
+		} else{
+			System.out.println("	游戏---"+currentApk.getName()+"---母包不存在,请检查后重试...");
+			return;
+		}
+		
+		
+//		2.检查打包渠道是否存在
+		System.out.println();
+		System.out.println("	(2):---正在检查打包渠道是否存在...");
+		if (currentChannel.getChannelList()==null||currentChannel.getChannelList().size()==0) {
+			System.out.println("	打包渠道不存在，请检查...");
+			return;
+		}
+		System.out.println("	打包渠道存在...");
+		
+//		3.清空打包过程中用到的目录
+		System.out.println();
+		System.out.println("	(3):清空打包过程中用到的目录...");
+		
+		File bakDir = new File(BAK_PATH);
+		File tempDir = new File(TEMP_PATH);
+		File gameOutDir = new File(BASE_OUT_PATH+FILE_SEPRATOR+currentApk.getName());
+		
+		boolean deleteBakDir = FileUtil.deleteFiles(bakDir);
+		if (deleteBakDir) {
+			System.out.println("	清空bak目录成功...");
+		}else{
+			System.out.println("	清空bak目录不成功，请手动清空后重试...");
+			return;
+		}
+		
+		boolean deleteTempDir = FileUtil.deleteFiles(tempDir);
+		if (deleteTempDir) {
+			System.out.println("	清空temp目录成功...");
+		}else{
+			System.out.println("	清空temp目录不成功，请手动清空后重试...");
+			return;
+		}
+		
+		boolean deleteGameOutDir = FileUtil.deleteFiles(gameOutDir);
+		if (deleteGameOutDir) {
+			System.out.println("	清空---"+currentApk.getName()+"---out目录成功...");
+		}else{
+			System.out.println("	清空---"+currentApk.getName()+"---out目录成功,请手动清空后重试...");
+			return;
+		}
+
 	}
 	
+	private void quickStep3LoopPackageWithChannels() {
+		System.out.println(LINE_SEPRATOR+LINE_SEPRATOR+LINE_SEPRATOR);
+		System.out.println("步骤三：---根据渠道循环打包...");		
+		
+		for (Map<String,String> channelMap : currentChannel.getChannelList()) {
+			System.out.println("准备打---" + channelMap + "---渠道包---");
+			System.out.println("	(1):---根据渠道信息生成META-INF\\channel_xxx_xxx_xxx.txt渠道文件");
+			StringBuffer channelSb = new StringBuffer();
+			for (Entry<String,String> entry : channelMap.entrySet()) {
+				if (entry.getKey().equals("PptvVasSdk_CID")&&!TextUtil.isEmpty(entry.getValue())) {
+					channelSb.append("_")
+					.append(entry.getValue());
+				}
+				if (entry.getKey().equals("PptvVasSdk_CCID")&&!TextUtil.isEmpty(entry.getValue())) {
+					channelSb.append("_")
+					.append(entry.getValue());
+				}
+				if (entry.getKey().equals("PptvVasSdk_DebugMode")&&!TextUtil.isEmpty(entry.getValue())) {
+					channelSb.append("_")
+					.append(entry.getValue());
+				}
+			}
+			String channelConfigFilePath=TEMP_PATH+FILE_SEPRATOR+"META-INF"+FILE_SEPRATOR+"channel"+channelSb.toString()+".txt";
+			File channelConfigFile = new File(channelConfigFilePath);
+			if (!channelConfigFile.getParentFile().exists()) {
+				channelConfigFile.getParentFile().mkdirs();
+			}
+			try {
+				boolean createNewFile = channelConfigFile.createNewFile();
+				if (createNewFile) {
+					System.out.println("	---生成渠道配置文件META-INF\\channel"+channelSb.toString()+".txt成功!");
+				}else{
+					System.out.println("	---生成渠道配置文件META-INF\\channel"+channelSb.toString()+".txt失败!,请重试");
+					return;
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
+				System.out.println("	---生成渠道配置文件META-INF\\channel"+channelSb.toString()+".txt失败!,请重试");
+				return;
+			}
+			
+			System.out.println("	(2):---将生成的渠道配置文件channel"+channelSb.toString()+".txt"+"加到META-INF目录中");
+			String sevenZipPath=BASE_TOOLS_PATH+FILE_SEPRATOR+"7Zip"+FILE_SEPRATOR+"7z.exe";
+			String apkPath=TEMP_PATH+FILE_SEPRATOR+currentApk.getName()+".apk";
+			String channelPath="META-INF/channel"+channelSb.toString()+".txt";
+			
+//			用7zip命名行向apk的META-INF目录添加生成的渠道配置文件
+			String updateChannelFile2METAINFCommand=String.format("%s u %s %s", new String[]{sevenZipPath,apkPath,channelPath});
+			CmdUtil.exeCmdWithLog(updateChannelFile2METAINFCommand, null, new File(TEMP_PATH));
+			System.out.println("	---添加渠道配置文件channel"+channelSb.toString()+".txt"+"到META-INF目录中成功");
+			
+//			Syso
+			System.out.println("	(3)---拷贝渠道apk到输出目录");
+			
+			String channelApkPath=BASE_OUT_PATH+FILE_SEPRATOR+currentApk.getName()+FILE_SEPRATOR+currentApk.getName()+channelSb.toString()+".apk";
+			boolean copyChannelApk = FileUtil.copyFile(new File(apkPath), new File(channelApkPath));
+			if (copyChannelApk) {
+				System.out.println("	---拷贝渠道apk到输出目录成功!");
+			}else{
+				System.out.println("	---拷贝渠道apk到输出目录失败!");
+				return;
+			}
+			
+//			用7zip命令删除META-INF目录下的渠道配置文件
+			
+			System.out.println("	(4)---用7zip命令删除META-INF目录下的渠道配置文件");
+			String deleteChannelFileFromMETAINFCommand = String.format("%s d %s %s", new String[]{sevenZipPath,apkPath,channelPath});
+			CmdUtil.exeCmdWithLog(deleteChannelFileFromMETAINFCommand, null, new File(TEMP_PATH));
+			System.out.println("	删除META-INF目录下的渠道配置文件成功!");
+		}
+		System.out.println("多渠道打包完成!");
+	}
+
 	@SuppressWarnings({ "unchecked", "unchecked" })
 	private MyEditComboBox.OnComboBoxItemClickListener<PackageMethod> packageMethodItemListener=new MyEditComboBox.OnComboBoxItemClickListener<PackageMethod>(){
 		@Override
@@ -953,7 +1094,7 @@ public class MyPackageFrame extends JFrame {
 	/**
 	 * 保存替换meta中的字段集合
 	 */
-	private ArrayList<String> metaList;
+	private ArrayList<String> metaList = new ArrayList<String>();
 	
 
 
