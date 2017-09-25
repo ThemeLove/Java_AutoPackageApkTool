@@ -1,7 +1,9 @@
-package com.themelove.tool.my;
+package com.themelove.tool.my.model;
 
 import java.io.File;
 import java.io.FileFilter;
+import java.io.FilenameFilter;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -13,6 +15,7 @@ import org.dom4j.DocumentException;
 import org.dom4j.Element;
 import org.dom4j.io.SAXReader;
 
+import com.themelove.tool.my.MyPackageFrame;
 import com.themelove.tool.my.bean.Apk;
 import com.themelove.tool.my.bean.ApktoolVersion;
 import com.themelove.tool.my.bean.Channel;
@@ -25,10 +28,40 @@ import com.themelove.tool.my.bean.PackageMethod;
  * date	  :2017年3月20日
  */
 public class Model {
+	private static Model instance;
+	private Model(){}
+	public static Model getInstance(){
+		if (instance==null) {
+			synchronized (Model.class) {
+				if (instance==null) {
+					instance=new Model();
+				}
+			}
+		}
+		return instance;
+	}
+	
+	private PrintStream standardOutStream;
+	
+	/**
+	 * 获取java标准输出流
+	 */
+	public PrintStream GetStandardOutStream(){
+		return standardOutStream;
+	}
+	
+	/**
+	 * 设置保存java标准的输出流
+	 * @param standardStream
+	 */
+	public void setStandardOutStream(PrintStream standardStream){
+		this.standardOutStream=standardStream;
+	}
+	
 	/**
 	 * 获取打包方式集合
 	 */
-	public static List<PackageMethod>  getPackageMethods() {
+	public  List<PackageMethod>  getPackageMethods() {
 		ArrayList<PackageMethod> packageMethodList = new ArrayList<PackageMethod>();
 		
 		PackageMethod metaMethod = new PackageMethod();
@@ -52,7 +85,7 @@ public class Model {
 	/**
 	 * 获取支持的Apktool版本集合
 	 */
-	public static List<ApktoolVersion> getApktoolVersions(String baseToolsPath) {
+	public  List<ApktoolVersion> getApktoolVersions(String baseToolsPath) {
 		ArrayList<ApktoolVersion> apktoolVersionList = new ArrayList<ApktoolVersion>();
 		
 		File toolsFile = new File(baseToolsPath);
@@ -81,7 +114,7 @@ public class Model {
 	/**
 	 * 初始化所有已经配置的游戏
 	 */
-	public static List<Game> getGames(String baseGamePath) {
+	public  List<Game> getGames(String baseGamePath) {
 		ArrayList<Game> gameList = new ArrayList<Game>();
 		
 //		初始化
@@ -103,6 +136,8 @@ public class Model {
 			Game game = new Game();
 //			1.解析游戏apk的配置文件
 			Apk apk = generateApkFromConfig(gameFile);
+//			设置当前游戏的路径
+			game.setGamePath(gameFile.getAbsolutePath());
 			game.setApk(apk);
 			
 //			2.解析channel的配置文件
@@ -123,9 +158,28 @@ public class Model {
 	 * @param gameFile
 	 * @return
 	 */
-	private static Keystore generateKeystoreFromConfig(File gameFile) {
+	private  Keystore generateKeystoreFromConfig(File gameFile) {
 		
-		String keystoreConfigPath=gameFile.getAbsolutePath()+MyPackageFrame.FILE_SEPRATOR+"keystore"+MyPackageFrame.FILE_SEPRATOR+"keystore.xml";
+		String keystoreName="";
+		File keyStoreDirFile=new File(gameFile.getAbsolutePath()+MyPackageFrame.FILE_SEPARATOR+"keystore");
+		
+		if (keyStoreDirFile.isDirectory()&&keyStoreDirFile.listFiles().length>0) {
+			File[] listFiles = keyStoreDirFile.listFiles(new FilenameFilter() {
+				
+				@Override
+				public boolean accept(File dir, String name) {
+					if (name.endsWith(".keystore")||name.endsWith(".jks")) {
+						return true;
+					}
+					return false;
+				}
+			});
+			if (listFiles!=null&&listFiles.length>0) {//如果.keystore 或者.jks的文件，我们只取第一个
+				keystoreName=listFiles[0].getName();
+			}
+		}
+		
+		String keystoreConfigPath=gameFile.getAbsolutePath()+MyPackageFrame.FILE_SEPARATOR+"keystore"+MyPackageFrame.FILE_SEPARATOR+"keystore.xml";
 		File keystoreConfigFile = new File(keystoreConfigPath);
 		if (!keystoreConfigFile.exists()) {
 			return null;
@@ -143,7 +197,7 @@ public class Model {
 			keystore.setPassword(password);
 			keystore.setAliasPassword(aliasPassword);
 			keystore.setAlias(alias);
-			keystore.setKeystorePath(gameFile.getAbsolutePath()+MyPackageFrame.FILE_SEPRATOR+"keystore"+MyPackageFrame.FILE_SEPRATOR+gameFile.getName()+".keystore");
+			keystore.setKeystorePath(gameFile.getAbsolutePath()+MyPackageFrame.FILE_SEPARATOR+"keystore"+MyPackageFrame.FILE_SEPARATOR+keystoreName);
 		} catch (DocumentException e) {
 			e.printStackTrace();
 		}
@@ -157,7 +211,7 @@ public class Model {
 	 */
 	private static Channel generateChannelFromConfig(File gameFile) {
 		Channel channel = new Channel();
-		String channelConfigPath=gameFile.getAbsolutePath()+MyPackageFrame.FILE_SEPRATOR+"channel"+MyPackageFrame.FILE_SEPRATOR+"channel.xml";
+		String channelConfigPath=gameFile.getAbsolutePath()+MyPackageFrame.FILE_SEPARATOR+"channel"+MyPackageFrame.FILE_SEPARATOR+"channel.xml";
 		ArrayList<Map<String, String>> channelsData = new ArrayList<Map<String,String>>();
 		SAXReader saxReader = new SAXReader();
 		try {
@@ -188,7 +242,7 @@ public class Model {
 	private static Apk generateApkFromConfig(File gameFile) {
 		Apk apk = new Apk();
 		try {
-			String apkConfigPath=gameFile.getAbsoluteFile()+MyPackageFrame.FILE_SEPRATOR+"apk"+MyPackageFrame.FILE_SEPRATOR+"apk.xml";
+			String apkConfigPath=gameFile.getAbsoluteFile()+MyPackageFrame.FILE_SEPARATOR+"apk"+MyPackageFrame.FILE_SEPARATOR+"apk.xml";
 			SAXReader saxReader = new SAXReader();
 			Document document = saxReader.read(new File(apkConfigPath));
 			Element apkElement = document.getRootElement();
@@ -198,7 +252,7 @@ public class Model {
 			apk.setName(apkName);
 			apk.setFullName(fullName);
 			apk.setDesc(desc);
-			apk.setApkPath(gameFile.getAbsolutePath()+MyPackageFrame.FILE_SEPRATOR+"apk"+MyPackageFrame.FILE_SEPRATOR+apkName+".apk");
+			apk.setApkPath(gameFile.getAbsolutePath()+MyPackageFrame.FILE_SEPARATOR+"apk"+MyPackageFrame.FILE_SEPARATOR+apkName+".apk");
 		} catch (DocumentException e) {
 			e.printStackTrace();
 		}
@@ -206,5 +260,25 @@ public class Model {
 		return apk;
 	}
 	
+	/**
+	 * 换行符
+	 */
+	public static String LINE_SEPRATOR=System.getProperty("line.separator");
+	/**
+	 * 路径分割符
+	 */
+	public static String FILE_SEPRATOR=System.getProperty("file.separator");
 	
+//	/**
+//	 * 获取pptv AndroidManifest.xml中的meta-data配置项
+//	 * @return
+//	 */
+//	public  StringBuffer getPPTVReplaceMetaSB(){
+//		StringBuffer replaceMetaSb = new StringBuffer();
+////		默认值为PptvVasSdk_CID,PptvVasSdk_CCID,PptvVasSdk_DebugMode
+//		replaceMetaSb.append("#").append("PptvVasSdk_CID").append(LINE_SEPRATOR)
+//		.append("#").append("PptvVasSdk_CCID").append(LINE_SEPRATOR)
+//		.append("#").append("PptvVasSdk_DebugMode");
+//		return replaceMetaSb;
+//	}
 }

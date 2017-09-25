@@ -8,7 +8,14 @@ public class Game {
 	private Apk apk;
 	private Channel channel;
 	private Keystore keystore;
+	private String   gamePath;
 	
+	public String getGamePath() {
+		return gamePath;
+	}
+	public void setGamePath(String gamePath) {
+		this.gamePath = gamePath;
+	}
 	public Apk getApk() {
 		return apk;
 	}

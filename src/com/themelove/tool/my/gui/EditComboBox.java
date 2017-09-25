@@ -1,4 +1,4 @@
-package com.themelove.tool.gui;
+package com.themelove.tool.my.gui;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -6,7 +6,7 @@ import java.util.List;
 import javax.swing.BorderFactory;
 import javax.swing.JComboBox;
 
-import com.themelove.tool.gui.MyComboBoxModel.ComboBoxItemListener;
+import com.themelove.tool.my.gui.MyComboBoxModel.ComboBoxItemListener;
 
 /**
  *	@author:qingshanliao
@@ -16,13 +16,13 @@ public class EditComboBox <E> extends JComboBox<E>{
 	private static final long serialVersionUID = 1L;
 	private List<E> items=new ArrayList<E>();
 	private String  titleBorder;
-	private String  hintMessage;
+//	private String  hintMessage;
 	private MyComboBoxModel.ComboBoxItemListener itemClickListener;
 	private MyComboBoxModel<E> model;
 	
 	public EditComboBox(String titleBorder,String hintMessage,MyComboBoxModel.ComboBoxItemListener itemClickListener){
 		this.titleBorder=titleBorder;
-		this.hintMessage=hintMessage;
+//		this.hintMessage=hintMessage;
 		this.itemClickListener=itemClickListener;
 		initView();
 	}

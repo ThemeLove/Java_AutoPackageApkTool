@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<channels>
+	<channel PptvVasSdk_CID="224" PptvVasSdk_CCID="" PptvVasSdk_DebugMode="false" />
+	<channel PptvVasSdk_CID="225" PptvVasSdk_CCID="" PptvVasSdk_DebugMode="false" />
+	<channel PptvVasSdk_CID="187" PptvVasSdk_CCID="316" PptvVasSdk_DebugMode="false" />
+	<channel PptvVasSdk_CID="613" PptvVasSdk_CCID="57193" PptvVasSdk_DebugMode="false" />
+	<channel PptvVasSdk_CID="10061" PptvVasSdk_CCID="100301" PptvVasSdk_DebugMode="false" />
+</channels>

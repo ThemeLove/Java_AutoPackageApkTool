@@ -1,19 +1,17 @@
-package com.themelove.tool.gui;
+package com.themelove.tool.my.gui;
 
 import java.util.List;
 
 import javax.swing.DefaultComboBoxModel;
-import javax.tools.JavaCompiler;
 
 /**
  * @author:lqs
  * date	  :2017年3月20日
  */
 @SuppressWarnings("serial")
-public class MyComboBoxModel<E> extends DefaultComboBoxModel{
+public class MyComboBoxModel<E> extends DefaultComboBoxModel<Object>{
 	private ComboBoxItemListener mItemClickListener;
 
-	@SuppressWarnings("unchecked")
 	public void setComboBoxItems(List<E> items){
 		removeAllElements();
 		for (Object object : items) {

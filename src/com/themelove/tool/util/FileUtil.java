@@ -84,6 +84,8 @@ public class FileUtil {
 //					System.out.println("清空文件---"+file.getName()+"---成功");
 				}
 			}
+		}else{//是文件
+			return false;
 		}
 		return true;
 	};
@@ -105,7 +107,7 @@ public class FileUtil {
 		
 		if (sourceDir.isDirectory()) {
 			File[] listFiles = sourceDir.listFiles();
-			System.out.println(Arrays.asList(listFiles));
+//			System.out.println(Arrays.asList(listFiles));
 			for (File file : listFiles) {
 				File targetFile=new File(targetDir.getAbsolutePath()+File.separator+file.getName());
 				if (file.isFile()) {
@@ -148,7 +150,7 @@ public class FileUtil {
 			bos.flush();
 			bis.close();
 			bos.close();
-			System.out.println("copyFile---"+source.getName()+"---成功");
+//			System.out.println("copyFile---"+source.getName()+"---成功");
 			return true;
 		} catch (IOException e) {
 			e.printStackTrace();

@@ -17,8 +17,9 @@ public class TextUtil {
 	 * @return
 	 */
 	public static String formatString(String format,String... args){
-		return String.format(Locale.getDefault(), format, args);
+		return String.format(Locale.getDefault(), format, (Object[])args);
 	}
+	
 	public static boolean isEmpty(String str){
 		if (str==null) {
 			return true;
