@@ -402,6 +402,22 @@ public class MyPackageFrame extends JFrame {
 			@Override
 			public void actionPerformed(ActionEvent event) {
 				logManager.appendLog("option:您点击了-----【打包】");
+				
+				if (currentGame==null) {
+					JOptionPane.showMessageDialog(null, "请选择游戏", "warning", JOptionPane.ERROR_MESSAGE); 
+					return;
+				}
+				
+				if (currentPackageMethod==null) {
+					JOptionPane.showMessageDialog(null, "请选择打包方式", "warning", JOptionPane.ERROR_MESSAGE); 
+					return;
+				}
+				
+				if (currentApktoolVersion==null) {
+					JOptionPane.showMessageDialog(null, "请选择Apktool版本", "warning", JOptionPane.ERROR_MESSAGE); 
+					return;
+				}
+				
 				logManager.appendLog("开始打包：游戏-----【"+currentApk.getFullName()+"】");
 				logManager.appendLog("打包详情请查看log文件...");
 				logManager.appendLog(".....正在打包....");
