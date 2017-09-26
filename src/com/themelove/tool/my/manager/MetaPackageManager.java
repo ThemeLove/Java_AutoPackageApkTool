@@ -38,6 +38,7 @@ public class MetaPackageManager {
 	private String BAK_PATH;
 	private String TEMP_PATH;
 	private String GAME_OUT_PATH;
+	private String TOOLS_PATH;//tools根目录
 	
 	private MetaPackageManager(){
 		
@@ -63,6 +64,7 @@ public class MetaPackageManager {
 		String BASE_WORK_PATH=BASE_PATH+FILE_SEPARATOR+"autoPackage"+FILE_SEPARATOR+"work";
 		BAK_PATH = BASE_WORK_PATH+FILE_SEPARATOR+"bak";
 		TEMP_PATH = BASE_WORK_PATH+FILE_SEPARATOR+"temp";
+		TOOLS_PATH = BASE_PATH+FILE_SEPARATOR+"autoPackage"+FILE_SEPARATOR+"tools";
 	}
 	
 	public void setGame(Game game){
@@ -114,6 +116,10 @@ public class MetaPackageManager {
 		
 //		(1)检查游戏母包是否存在
 		System.out.println("*****(1):检查所选游戏母包是否存在");
+		if (game.getApk()==null) {
+			System.out.println("error:----->请检查apk配置是否存在");
+			return false;
+		}
 		File gameApk = new File(game.getApk().getApkPath());
 		if (!gameApk.exists()) {
 			System.out.println("error:----->游戏母包不存在...");
@@ -137,22 +143,52 @@ public class MetaPackageManager {
 		
 //		(2)检查要打的渠道号集合是否存在
 		System.out.println("*****(2):检查要打的渠道号集合是否存在");
+		if (game.getChannel()==null) {
+			System.out.println("error:----->请检查channel配置是否存在");
+			return false;
+		}
+		
 		List<Map<String, String>> channelList = game.getChannel().getChannelList();
 		if (channelList==null||channelList.size()==0) {
 			System.out.println("error:----->打包渠道号不存在");
 			return false;
 		}
 		
-//		(3)检查当前选择的apktool目录是否存在
-		System.out.println("*****(3):检查当前apktool目录是否存在");
+//		(3)检查keystore配置
+		System.out.println("*****(3):检查keystore配置");
+		if (game.getKeystore()==null) {
+			System.out.println("error:----->请检查keystore参数配置或签名文件是否存在...");
+			return false;
+		}
+		
+//		(4)检查当前选择的apktool目录是否存在
+		System.out.println("*****(4):检查当前apktool目录是否存在");
 		File apktoolDir = new File(apktoolVersion.getPath());
 		if (!apktoolDir.exists()) {
 			System.out.println("error:----->apktool目录不存在");
 			return false;
 		}
 		
-//		(4)清空打包过程中的工作目录bak、temp
-		System.out.println("*****(4):清空打包过程中的工作目录bak、temp");
+//		(5)检查jarsigner.exe是否存在
+		System.out.println("*****(5):检查当前jarsigner.exe是否存在");
+		String jarsignerPath=TOOLS_PATH+FILE_SEPARATOR+"jarsigner"+FILE_SEPARATOR+"jarsigner.exe";
+		File jarsignerFile = new File(jarsignerPath);
+		if (!jarsignerFile.exists()) {
+			System.out.println("error:----->jarsigner.exe不存在");
+			return false;
+		}
+		
+//		(6)检查zipalign.exe是否存在
+		System.out.println("*****(6):检查zipalign.exe是否存在");
+		String zipalignPath=TOOLS_PATH+FILE_SEPARATOR+"zipalign"+FILE_SEPARATOR+"zipalign.exe";
+		File zipalignFile = new File(zipalignPath);
+		if (!zipalignFile.exists()) {
+			System.out.println("error:----->zipalign.exe不存在");
+			return false;
+		}
+		
+//		(7)清空打包过程中的工作目录bak、temp
+		System.out.println("*****(7):清空打包过程中的工作目录bak、temp");
 		File bakDir = new File(BAK_PATH);
 		if (!FileUtil.deleteFiles(bakDir)) {
 			System.out.println("error:----->清空bak目录失败");
@@ -170,8 +206,8 @@ public class MetaPackageManager {
 //			System.out.println("error:----->清空游戏输出目录失败");
 //			return false;
 //		}
-//		(5)添加公共资源依赖
-		System.out.println("*****(5):添加公共资源framework-res.apk依赖");
+//		(8)添加公共资源依赖
+		System.out.println("*****(7):添加公共资源framework-res.apk依赖");
 		CmdUtil.exeCmdWithLog("java -jar -Xms512m -Xmx512m apktool.jar if framework-res.apk",null, new File(apktoolVersion.getPath()));
 		
 		System.out.println("1.初始化成功");
@@ -246,6 +282,7 @@ public class MetaPackageManager {
 			
 //			(3)生成签名包
 			System.out.println("*****(3):生成签名包");
+			String jarsignerPath=TOOLS_PATH+FILE_SEPARATOR+"jarsigner";
 //			String jarsignerPath=apktoolVersion.getPath()+FILE_SEPARATOR+"jarsigner.exe";
 			String keystorePath=game.getKeystore().getKeystorePath();
 			String signApkName=game.getApk().getName()+"_sign.apk";
@@ -253,7 +290,7 @@ public class MetaPackageManager {
 			String generateSignApkCommand=String.format(Locale.getDefault(),"%s -verbose -digestalg SHA1 -sigalg SHA1withRSA -keystore %s -storepass %s -keypass %s -signedjar %s %s %s",
 					new Object[]{"jarsigner",keystorePath,game.getKeystore().getPassword(),game.getKeystore().getAliasPassword(),signApkPath,unSignApkPath,game.getKeystore().getAlias()});
 			System.out.println("generateSignApkCommand----->"+generateSignApkCommand);
-			CmdUtil.exeCmdWithLog(generateSignApkCommand, null, new File(apktoolVersion.getPath()));
+			CmdUtil.exeCmdWithLog(generateSignApkCommand, null, new File(jarsignerPath));
 			
 			File signApk = new File(signApkPath);
 			if (!signApk.exists()) {
@@ -267,15 +304,17 @@ public class MetaPackageManager {
 			
 //			(4)签名、优化生成最终包
 			System.out.println("*****(4):对齐优化生成最终渠道包");
-			String zipAlignPath=apktoolVersion.getPath()+FILE_SEPARATOR+"zipalign.exe";
+			
+			String zipalignPath=TOOLS_PATH+FILE_SEPARATOR+"zipalign";
+//			String zipAlignPath=apktoolVersion.getPath()+FILE_SEPARATOR+"zipalign.exe";
 			SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyyMMddHHmm");
 			String timeStamp = simpleDateFormat.format(new Date());
 			
 			String channelApkName=game.getApk().getName()+"_"+channel.get("PptvVasSdk_CID")+"_"+channel.get("PptvVasSdk_CCID")+"_"+channel.get("PptvVasSdk_DebugMode")+"_"+timeStamp+".apk";
 			String channelApkPath=GAME_OUT_PATH+FILE_SEPARATOR+channelApkName;
-			String generateChannelApkCommand=String.format(Locale.getDefault(),"%s -v 4 %s %s",new Object[]{zipAlignPath,signApkPath,channelApkPath});
+			String generateChannelApkCommand=String.format(Locale.getDefault(),"%s -v 4 %s %s",new Object[]{"zipalign",signApkPath,channelApkPath});
 			System.out.println("generateChannelApkCommand----->"+generateChannelApkCommand);
-			CmdUtil.exeCmdWithLog(generateChannelApkCommand, null, new File(apktoolVersion.getPath()));
+			CmdUtil.exeCmdWithLog(generateChannelApkCommand, null, new File(zipalignPath));
 			if (!new File(channelApkPath).exists()) {
 				System.out.println("error:----->生成渠道包失败！");
 				return false;

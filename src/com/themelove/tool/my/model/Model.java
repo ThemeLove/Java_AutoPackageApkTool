@@ -22,6 +22,7 @@ import com.themelove.tool.my.bean.Channel;
 import com.themelove.tool.my.bean.Game;
 import com.themelove.tool.my.bean.Keystore;
 import com.themelove.tool.my.bean.PackageMethod;
+import com.themelove.tool.util.TextUtil;
 
 /**
  * @author:lqs
@@ -29,7 +30,9 @@ import com.themelove.tool.my.bean.PackageMethod;
  */
 public class Model {
 	private static Model instance;
-	private Model(){}
+	private Model(){
+		
+	}
 	public static Model getInstance(){
 		if (instance==null) {
 			synchronized (Model.class) {
@@ -163,6 +166,10 @@ public class Model {
 		String keystoreName="";
 		File keyStoreDirFile=new File(gameFile.getAbsolutePath()+MyPackageFrame.FILE_SEPARATOR+"keystore");
 		
+		if (!keyStoreDirFile.exists()) {
+			keyStoreDirFile.mkdirs();
+		}
+		
 		if (keyStoreDirFile.isDirectory()&&keyStoreDirFile.listFiles().length>0) {
 			File[] listFiles = keyStoreDirFile.listFiles(new FilenameFilter() {
 				
@@ -176,12 +183,23 @@ public class Model {
 			});
 			if (listFiles!=null&&listFiles.length>0) {//如果.keystore 或者.jks的文件，我们只取第一个
 				keystoreName=listFiles[0].getName();
+			}else{
+				System.out.println("error:----->游戏【"+gameFile.getName()+"】签名文件不存在！");
+				return null;
 			}
+		}else{
+			System.out.println("error:----->游戏【"+gameFile.getName()+"】签名目录不存在！");
+			return null;
+		}
+		
+		if (TextUtil.isEmpty(keystoreName)) {
+			return null;
 		}
 		
 		String keystoreConfigPath=gameFile.getAbsolutePath()+MyPackageFrame.FILE_SEPARATOR+"keystore"+MyPackageFrame.FILE_SEPARATOR+"keystore.xml";
 		File keystoreConfigFile = new File(keystoreConfigPath);
 		if (!keystoreConfigFile.exists()) {
+			System.out.println("error:----->游戏【"+gameFile.getName()+"】签名配置文件keystore.xml不存在！");
 			return null;
 		}
 		
@@ -192,14 +210,29 @@ public class Model {
 			document = saxReader.read(new File(keystoreConfigPath));
 			Element keystoreElement = document.getRootElement();
 			String password = keystoreElement.attributeValue("password");
+			if (TextUtil.isEmpty(password)) {
+				System.out.println("error:----->游戏【"+gameFile.getName()+"】签名配置文件keystore.xml配置出错！password不能为空！");
+				return null;
+			}
+			
 			String alias = keystoreElement.attributeValue("alias");
+			if (TextUtil.isEmpty(alias)) {
+				System.out.println("error:----->游戏【"+gameFile.getName()+"】签名配置文件keystore.xml配置出错！alias不能为空！");
+				return null;
+			}
 			String aliasPassword = keystoreElement.attributeValue("aliasPassword");
+			if (TextUtil.isEmpty(aliasPassword)) {
+				System.out.println("error:----->游戏【"+gameFile.getName()+"】签名配置文件keystore.xml配置出错！aliasPassword不能为空！");
+				return null;
+			}
+			
 			keystore.setPassword(password);
 			keystore.setAliasPassword(aliasPassword);
 			keystore.setAlias(alias);
 			keystore.setKeystorePath(gameFile.getAbsolutePath()+MyPackageFrame.FILE_SEPARATOR+"keystore"+MyPackageFrame.FILE_SEPARATOR+keystoreName);
 		} catch (DocumentException e) {
 			e.printStackTrace();
+			return null;
 		}
 		return keystore;
 	}
@@ -212,10 +245,16 @@ public class Model {
 	private static Channel generateChannelFromConfig(File gameFile) {
 		Channel channel = new Channel();
 		String channelConfigPath=gameFile.getAbsolutePath()+MyPackageFrame.FILE_SEPARATOR+"channel"+MyPackageFrame.FILE_SEPARATOR+"channel.xml";
+		File channelConfigFile = new File(channelConfigPath);
+		if (!channelConfigFile.exists()) {
+			System.out.println("error:----->游戏：【"+gameFile.getName()+"】渠道配置文件channel.xml不存在");
+			return null;
+		}
+		
 		ArrayList<Map<String, String>> channelsData = new ArrayList<Map<String,String>>();
 		SAXReader saxReader = new SAXReader();
 		try {
-			Document reader = saxReader.read(new File(channelConfigPath));
+			Document reader = saxReader.read(channelConfigFile);
 			Element rootElement = reader.getRootElement();
 			List<Element> channelList = rootElement.elements("channel");
 			for (Element channelTemp : channelList) {
@@ -229,6 +268,7 @@ public class Model {
 			channel.setChannelList(channelsData);
 		} catch (DocumentException e) {
 			e.printStackTrace();
+			return null;
 		}
 		return channel;
 	}
@@ -240,23 +280,42 @@ public class Model {
 	 * @throws DocumentException
 	 */
 	private static Apk generateApkFromConfig(File gameFile) {
+		
 		Apk apk = new Apk();
 		try {
 			String apkConfigPath=gameFile.getAbsoluteFile()+MyPackageFrame.FILE_SEPARATOR+"apk"+MyPackageFrame.FILE_SEPARATOR+"apk.xml";
+			File apkConfigFile = new File(apkConfigPath);
+			if (!apkConfigFile.exists()) {
+				System.out.println("error:----->游戏：【"+gameFile.getName()+"】apk配置文件apk.xml不存在");
+				return null;
+			}
+			
 			SAXReader saxReader = new SAXReader();
 			Document document = saxReader.read(new File(apkConfigPath));
 			Element apkElement = document.getRootElement();
 			String apkName = apkElement.attributeValue("name");
+			if (TextUtil.isEmpty(apkName)) {
+				System.out.println("error:----->游戏：【"+gameFile.getName()+"】apk配置文件apk.xml出错！：name不能为空");
+				return null;
+			}
+			
 			String fullName = apkElement.attributeValue("fullName");
 			String desc = apkElement.attributeValue("desc");
 			apk.setName(apkName);
 			apk.setFullName(fullName);
 			apk.setDesc(desc);
+			
+			String apkPath=gameFile.getAbsolutePath()+MyPackageFrame.FILE_SEPARATOR+"apk"+MyPackageFrame.FILE_SEPARATOR+apkName+".apk";
+			File apkFile = new File(apkPath);
+			if (!apkFile.exists()) {
+				System.out.println("error:----->游戏：【"+gameFile.getName()+"】母包apk不存在！");
+				return null;
+			}
 			apk.setApkPath(gameFile.getAbsolutePath()+MyPackageFrame.FILE_SEPARATOR+"apk"+MyPackageFrame.FILE_SEPARATOR+apkName+".apk");
 		} catch (DocumentException e) {
 			e.printStackTrace();
+			return null;
 		}
-		
 		return apk;
 	}
 	

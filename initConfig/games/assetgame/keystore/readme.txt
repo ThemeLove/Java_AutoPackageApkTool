@@ -1,0 +1,3 @@
+password:assetgame
+alias:assetgame
+aliasPassword:assetgame

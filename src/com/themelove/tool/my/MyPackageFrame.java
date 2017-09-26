@@ -31,6 +31,7 @@ import com.themelove.tool.my.manager.MetaPackageManager;
 import com.themelove.tool.my.manager.QuickPackageManager;
 import com.themelove.tool.my.model.Model;
 import com.themelove.tool.util.CmdUtil;
+import com.themelove.tool.util.FileUtil;
 
 /**
  *	@author:qingshanliao
@@ -83,17 +84,36 @@ public class MyPackageFrame extends JFrame {
 	private LogManager 	logManager;   //用户操作记录gManager
 
 	public MyPackageFrame() {
+		String initConfigPath=BASE_PATH+FILE_SEPARATOR+"initConfig";
+		String autoPackage=BASE_PATH+FILE_SEPARATOR+"autoPackage";
+		File initConfigDir = new File(initConfigPath);
+		if (!initConfigDir.exists()) {
+			JOptionPane.showMessageDialog(null, "缺少初始化配置目录initConfig,程序退出", "warning", JOptionPane.ERROR_MESSAGE); 
+			return;
+		}
+		File autoPackageDir = new File(autoPackage);
+//		利用配置初始化配置文件初始化打包工具
+		boolean isInitConfigSuccess = FileUtil.copyDir(initConfigDir,autoPackageDir);
+		if (!isInitConfigSuccess) {
+			JOptionPane.showMessageDialog(null, "初始化配置目录initConfig失败！", "warning", JOptionPane.ERROR_MESSAGE); 
+			return;
+		}else{//如果初始化成功，删除之前的初始化配置目录initConfig
+//			FileUtil.deleteFiles(initConfigDir);//删除initConfigDir下面的所有文件及目录
+//			FileUtil.deleteFile(initConfigDir);//删除initConfigDir本身
+		}
+		
 		model = Model.getInstance();
 		model.setStandardOutStream(System.out);
 		assetPackageManager = AssetPackageManager.getInstance();
 		metaPackageManager = MetaPackageManager.getInstance();
 		quickPackageManager = QuickPackageManager.getInstance();
 		logManager = LogManager.getInstance();
+		logManager.init();
 		
 		assetPackageManager.init();
 		metaPackageManager.init();
 		quickPackageManager.init();
-		logManager.init();
+
 		logManager.setFlag(true);
 		
 		refreshData();
@@ -151,7 +171,7 @@ public class MyPackageFrame extends JFrame {
 		
 		logManager.appendLog("打包游戏列表如下：");
 		for (int i = 0; i < gameList.size(); i++) {
-			logManager.appendLog(i+"-----【"+gameList.get(i).getApk().getFullName()+"】");
+			logManager.appendLog((i+1)+"-----【"+gameList.get(i).getApk().getFullName()+"】");
 		}
 	}
 	
@@ -362,10 +382,19 @@ public class MyPackageFrame extends JFrame {
 			
 			@Override
 			public void actionPerformed(ActionEvent event) {
-				File keystoreDir = new File(KEYSTORE_OUT_PATH);
-				if (!keystoreDir.exists()) {
-					keystoreDir.mkdirs();
+				String keytoolPath=KEYSTORE_TOOL_PATH+FILE_SEPARATOR+"keytool.exe";
+				
+				File keytoolFile = new File(keytoolPath);
+				if (!keytoolFile.exists()) {
+					JOptionPane.showMessageDialog(null,"签名工具keytool:"+FILE_SEPARATOR+keytoolPath+FILE_SEPARATOR+"不存在", "warning", JOptionPane.ERROR_MESSAGE); 
+					return ;
 				}
+				
+				File keystoreOutDir = new File(KEYSTORE_OUT_PATH);
+						if (!keystoreOutDir.exists()) {
+							keystoreOutDir.mkdirs();
+				}	
+
 				
 				logManager.appendLog("option:您点击了-----【生成签名】");
 //				默认签名会生成在autoPackage\keystore目录下
@@ -413,29 +442,46 @@ public class MyPackageFrame extends JFrame {
 					return;
 				}
 				
-				if (currentApktoolVersion==null) {
-					JOptionPane.showMessageDialog(null, "请选择Apktool版本", "warning", JOptionPane.ERROR_MESSAGE); 
-					return;
-				}
-				
-				logManager.appendLog("开始打包：游戏-----【"+currentApk.getFullName()+"】");
-				logManager.appendLog("打包详情请查看log文件...");
-				logManager.appendLog(".....正在打包....");
-				logManager.setFlag(false);
-				
-				
 				boolean isPackageSuccess=false;
 //				根据打包方式多渠道打包
 				switch (currentPackageMethod.getMethod()) {
 				case PackageMethod.METHOD_META:
+					if (currentApktoolVersion==null) {
+						JOptionPane.showMessageDialog(null, "请选择Apktool版本", "warning", JOptionPane.ERROR_MESSAGE); 
+						return;
+					}
+					
+					logManager.appendLog("开始打包：游戏-----【"+currentApk.getFullName()+"】");
+					logManager.appendLog("打包详情请查看log文件...");
+					logManager.appendLog(".....正在打包....");
+					logManager.setFlag(false);
+					
 					isPackageSuccess = metaPackageManager.metaAutoLoopPackage_Main();
 					break;
 					
 				case PackageMethod.METHOD_ASSET:
+					if (currentApktoolVersion==null) {
+						JOptionPane.showMessageDialog(null, "请选择Apktool版本", "warning", JOptionPane.ERROR_MESSAGE); 
+						return;
+					}
+					
+					logManager.appendLog("开始打包：游戏-----【"+currentApk.getFullName()+"】");
+					logManager.appendLog("打包详情请查看log文件...");
+					logManager.appendLog(".....正在打包....");
+					logManager.setFlag(false);
+					
+					
 					isPackageSuccess = assetPackageManager.assetAutoLoopPackage_Main();
 					break;
 					
 				case PackageMethod.METHOD_QUICK:
+					
+					logManager.appendLog("开始打包：游戏-----【"+currentApk.getFullName()+"】");
+					logManager.appendLog("打包详情请查看log文件...");
+					logManager.appendLog(".....正在打包....");
+					logManager.setFlag(false);
+					
+					
 					isPackageSuccess = quickPackageManager.quickAutoLoopPackage_Main();
 					break;
 					
@@ -490,9 +536,9 @@ public class MyPackageFrame extends JFrame {
 			
 			currentApktoolVersion=apktoolVersion;
 			
-			assetPackageManager.setApktoolVersion(currentApktoolVersion);
+//			assetPackageManager.setApktoolVersion(currentApktoolVersion);
 			metaPackageManager.setApktoolVersion(currentApktoolVersion);
-			quickPackageManager.setApktoolVersion(currentApktoolVersion);
+//			quickPackageManager.setApktoolVersion(currentApktoolVersion);
 		}
 
 		@Override

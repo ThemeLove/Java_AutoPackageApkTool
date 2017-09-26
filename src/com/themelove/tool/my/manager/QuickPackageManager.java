@@ -11,7 +11,6 @@ import java.util.List;
 import java.util.Map;
 
 import com.themelove.tool.my.bean.Apk;
-import com.themelove.tool.my.bean.ApktoolVersion;
 import com.themelove.tool.my.bean.Channel;
 import com.themelove.tool.my.bean.Game;
 import com.themelove.tool.util.CmdUtil;
@@ -37,7 +36,6 @@ public class QuickPackageManager {
 	}
 	
 	private Game game;
-	private ApktoolVersion apktoolVersion;
 	private Apk apk;
 	private Channel channel;
 	
@@ -46,14 +44,13 @@ public class QuickPackageManager {
 	private String BASE_PATH;//当前项目根目录
 	private String BAK_PATH;//Bak 根目录
 	private String TEMP_PATH;//Temp 根目录
-//	private String BASE_TOOLS_PATH;//Tool 根目录
+	private String TOOLS_PATH;//Tool 根目录
 	private String GAME_OUT_PATH;//渠道包输出目录
 	public void init( ){
 		FILE_SEPARATOR = System.getProperty("file.separator");
 		LINE_SEPARATOR = System.getProperty("line.separator");
 		BASE_PATH = System.getProperty("user.dir");
-//		BASE_TOOLS_PATH=BASE_PATH+FILE_SEPARATOR+"autoPackage"+FILE_SEPARATOR+"tools";
-		
+		TOOLS_PATH=BASE_PATH+FILE_SEPARATOR+"autoPackage"+FILE_SEPARATOR+"tools";
 		String BASE_WORK_PATH=BASE_PATH+FILE_SEPARATOR+"autoPackage"+FILE_SEPARATOR+"work";
 		BAK_PATH = BASE_WORK_PATH+FILE_SEPARATOR+"bak";
 		TEMP_PATH = BASE_WORK_PATH+FILE_SEPARATOR+"temp";
@@ -66,10 +63,6 @@ public class QuickPackageManager {
 		
 		String BASE_OUT_PATH=BASE_PATH+FILE_SEPARATOR+"autoPackage"+FILE_SEPARATOR+"out";
 		GAME_OUT_PATH = BASE_OUT_PATH+FILE_SEPARATOR+game.getApk().getName();
-	}
-	
-	public void setApktoolVersion(ApktoolVersion apktoolVersion){
-		this.apktoolVersion=apktoolVersion;
 	}
 	
 	public boolean quickAutoLoopPackage_Main(){
@@ -99,6 +92,10 @@ public class QuickPackageManager {
 		
 //		(1)检查游戏母包是否存在
 		System.out.println("*****(1):检查所选游戏母包是否存在");
+		if (game.getApk()==null) {
+			System.out.println("error:----->请检查apk配置是否存在");
+			return false;
+		}
 		File gameApk = new File(game.getApk().getApkPath());
 		if (!gameApk.exists()) {
 			System.out.println("error:----->游戏母包不存在...");
@@ -109,12 +106,16 @@ public class QuickPackageManager {
 		
 //		(2)检查要打的渠道号集合是否存在
 		System.out.println("*****(2):检查要打的渠道号集合是否存在");
+		if (game.getChannel()==null) {
+			System.out.println("error:----->请检查channel配置是否存在");
+			return false;
+		}
+		
 		List<Map<String, String>> channelList = game.getChannel().getChannelList();
 		if (channelList==null||channelList.size()==0) {
 			System.out.println("error:----->打包渠道号不存在");
 			return false;
 		}
-		
 ////		(3)检查当前选择的apktool目录是否存在
 //		System.out.println("*****(3):检查当前apktool目录是否存在");
 //		File apktoolDir = new File(apktoolVersion.getPath());
@@ -131,8 +132,17 @@ public class QuickPackageManager {
 //			return false;
 //		}
 		
-//		(3)清空打包过程中的工作目录bak、temp
-		System.out.println("*****(3):清空打包过程中的工作目录bak、temp");
+//		(3)检查jar.exe是否存在
+		System.out.println("*****(3):检查jar.exe(命名行替换apk中的文件)是否存在");
+		String jarPath=TOOLS_PATH+FILE_SEPARATOR+"jar"+FILE_SEPARATOR+"jar.exe";
+		File jarFile = new File(jarPath);
+		if (!jarFile.exists()) {
+			System.out.println("error:----->jar.exe不存在");
+			return false;
+		}
+		
+//		(4)清空打包过程中的工作目录bak、temp
+		System.out.println("*****(4):清空打包过程中的工作目录bak、temp");
 		File bakDir = new File(BAK_PATH);
 		if (!FileUtil.deleteFiles(bakDir)) {
 			System.out.println("error:----->清空bak目录失败");
@@ -232,7 +242,7 @@ public class QuickPackageManager {
 	//		用生成的META-INF\\channel.ini配置文件替换，temp目录中apk中META-INF\channel.ini文件
 	//		直接用jdk 的jar命名即可完成
 			System.out.println("*****(2):用生成的渠道配置文件channel.ini替换apk中的配置文件");
-			String jarPath=apktoolVersion.getPath()+FILE_SEPARATOR+"jar.exe";
+			String jarPath=TOOLS_PATH+FILE_SEPARATOR+"jar"+FILE_SEPARATOR+"jar.exe";
 			String tempApkPath=apk.getName()+".apk";
 	//		注意这里要用"/"
 			String configPath="META-INF/channel.ini";

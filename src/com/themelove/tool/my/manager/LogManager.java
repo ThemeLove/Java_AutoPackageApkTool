@@ -11,7 +11,6 @@ import javax.swing.JTextArea;
 
 import com.themelove.tool.my.bean.Game;
 import com.themelove.tool.my.model.Model;
-import com.themelove.tool.util.FileUtil;
 
 /**	用户在使用打包工具过程中log记录Manager：1：用户操作log（比如选择了游戏，切换了apktool版本）2：用户点击打包按钮（打渠道包详细过程：比如反编译、回编、签名、优化等）
  *	@author:qingshanliao
@@ -51,13 +50,12 @@ public class LogManager {
 		OPTION_LOG_PATH=BASE_WORK_PATH+FILE_SEPARATOR+OPTION_FILE_NAME;
 
 		File optionFile = new File(OPTION_LOG_PATH);
+		if (!optionFile.getParentFile().exists()) {
+			optionFile.getParentFile().mkdirs();
+		}
+		
 		try {
-			if (!optionFile.exists()) {
-				optionFile.createNewFile();
-			}else{
-				FileUtil.deleteFile(optionFile);
-				optionFile.createNewFile();
-			}
+			optionFile.createNewFile();
 		} catch (Exception e) {
 			
 		}

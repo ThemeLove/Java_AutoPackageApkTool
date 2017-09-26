@@ -2,8 +2,6 @@ package com.themelove.tool.util;
 
 import java.util.Locale;
 
-import org.python.core.StringFormatTest;
-
 /**
  *  文本相关工具类
  *	@author:qingshanliao

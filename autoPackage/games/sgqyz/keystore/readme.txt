@@ -1,3 +1,0 @@
-password:metagame
-alias:themelove
-aliasPassword:metagame
