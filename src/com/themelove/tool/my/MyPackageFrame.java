@@ -87,19 +87,22 @@ public class MyPackageFrame extends JFrame {
 		String initConfigPath=BASE_PATH+FILE_SEPARATOR+"initConfig";
 		String autoPackage=BASE_PATH+FILE_SEPARATOR+"autoPackage";
 		File initConfigDir = new File(initConfigPath);
-		if (!initConfigDir.exists()) {
-			JOptionPane.showMessageDialog(null, "缺少初始化配置目录initConfig,程序退出", "warning", JOptionPane.ERROR_MESSAGE); 
-			return;
-		}
 		File autoPackageDir = new File(autoPackage);
-//		利用配置初始化配置文件初始化打包工具
-		boolean isInitConfigSuccess = FileUtil.copyDir(initConfigDir,autoPackageDir);
-		if (!isInitConfigSuccess) {
-			JOptionPane.showMessageDialog(null, "初始化配置目录initConfig失败！", "warning", JOptionPane.ERROR_MESSAGE); 
-			return;
-		}else{//如果初始化成功，删除之前的初始化配置目录initConfig
-//			FileUtil.deleteFiles(initConfigDir);//删除initConfigDir下面的所有文件及目录
-//			FileUtil.deleteFile(initConfigDir);//删除initConfigDir本身
+		if (!autoPackageDir.exists()) {
+			if (!initConfigDir.exists()) {
+				JOptionPane.showMessageDialog(null, "缺少初始化配置目录initConfig,程序退出", "warning", JOptionPane.ERROR_MESSAGE); 
+				return;
+			}
+			
+//			利用配置初始化配置文件初始化打包工具
+			boolean isInitConfigSuccess = FileUtil.copyDir(initConfigDir,autoPackageDir);
+			if (!isInitConfigSuccess) {
+				JOptionPane.showMessageDialog(null, "初始化配置目录initConfig失败！", "warning", JOptionPane.ERROR_MESSAGE); 
+				return;
+			}else{//如果初始化成功，删除之前的初始化配置目录initConfig
+				FileUtil.deleteFiles(initConfigDir);//删除initConfigDir下面的所有文件及目录
+				FileUtil.deleteFile(initConfigDir);//删除initConfigDir本身
+			}
 		}
 		
 		model = Model.getInstance();
@@ -143,9 +146,9 @@ public class MyPackageFrame extends JFrame {
 	 * 初始化或者用户点击重置按钮时，重置各个按钮view的状态
 	 */
 	private void resetView(){
-		packageMethodComboBox.setSelectedIndex(-1);
-		apktoolVersionComboBox.setSelectedIndex(-1);
-		gameComboBox.setSelectedIndex(-1);
+		packageMethodComboBox.updateComboBox(packageMethodList);
+		apktoolVersionComboBox.updateComboBox(apktoolVersionList);
+		gameComboBox.updateComboBox(gameList);
 
 		channelsInfo.setText("");
 		optionInfo.setText("");
@@ -179,7 +182,7 @@ public class MyPackageFrame extends JFrame {
 	 * 初始化UI视图
 	 */
 	private void initView() {
-		setTitle("MyVasPackageTool");
+		setTitle("MyVasPackageTool(Themelove)");
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setBounds(100, 100, 702, 538);
 		getContentPane().setLayout(null);

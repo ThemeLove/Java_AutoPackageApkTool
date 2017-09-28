@@ -1,0 +1,3 @@
+password:quickgame
+alias:quickgame
+aliasPassword:quickgame
