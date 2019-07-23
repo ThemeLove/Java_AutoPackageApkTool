@@ -12,7 +12,9 @@ import javax.swing.JTextArea;
 import com.themelove.tool.my.bean.Game;
 import com.themelove.tool.my.model.Model;
 
-/**	用户在使用打包工具过程中log记录Manager：1：用户操作log（比如选择了游戏，切换了apktool版本）2：用户点击打包按钮（打渠道包详细过程：比如反编译、回编、签名、优化等）
+/**	用户在使用打包工具过程中log记录Manager：
+ * 1：用户操作log（比如选择了游戏，切换了apktool版本）输出到控制台并记录到option_log.txt文件
+ * 2：用户点击打包按钮（打渠道包详细过程：比如反编译、回编、签名、优化等）
  *	@author:qingshanliao
  *  @date  :2017年9月22日
  */

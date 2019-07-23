@@ -1,0 +1,3 @@
+password:jyjy_mpptvvas
+alias:jyjy_m.keystore
+aliasPassword:jyjy_mpptvvas

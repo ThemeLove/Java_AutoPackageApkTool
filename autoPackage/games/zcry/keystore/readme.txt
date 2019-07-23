@@ -1,0 +1,3 @@
+password:zcry_mpptvvas
+alias:zcry_m.kestore
+aliasPassword:zcry_mpptvvas

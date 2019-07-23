@@ -1,0 +1,10 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<channels>
+	<channel PptvVasSdk_CID="189" PptvVasSdk_CCID="100919" PptvVasSdk_DebugMode="false"/>
+<!-- 	<channel PptvVasSdk_CID="189" PptvVasSdk_CCID="308" PptvVasSdk_DebugMode="false"/>
+	<channel PptvVasSdk_CID="189" PptvVasSdk_CCID="310" PptvVasSdk_DebugMode="false"/>
+	<channel PptvVasSdk_CID="189" PptvVasSdk_CCID="100191" PptvVasSdk_DebugMode="false"/>
+	<channel PptvVasSdk_CID="189" PptvVasSdk_CCID="100920" PptvVasSdk_DebugMode="false"/>
+	<channel PptvVasSdk_CID="189" PptvVasSdk_CCID="100922" PptvVasSdk_DebugMode="false"/>
+	<channel PptvVasSdk_CID="189" PptvVasSdk_CCID="100927" PptvVasSdk_DebugMode="false"/> -->
+</channels>

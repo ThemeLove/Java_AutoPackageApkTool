@@ -1,0 +1,3 @@
+password:dqzdgjq_mpptvvas
+alias:dqzdgjq_m.keystore
+aliasPassword:dqzdgjq_mpptvvas

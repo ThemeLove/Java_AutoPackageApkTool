@@ -1,0 +1,3 @@
+password:dfw_mpptvvas
+alias:dfw_m.keystore
+aliasPassword:dfw_mpptvvas

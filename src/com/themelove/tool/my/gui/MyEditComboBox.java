@@ -149,7 +149,7 @@ public class  MyEditComboBox <E> extends JComboBox<E>{
 		setSelectedIndex(-1);
 	}
 	
-	public   interface  OnComboBoxItemClickListener<E>{
+	public interface OnComboBoxItemClickListener<E>{
 		  void OnItemClickListener(E e);
 		  void OnEditInputListener(String inputText);
 	}

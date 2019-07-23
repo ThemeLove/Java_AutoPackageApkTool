@@ -313,7 +313,7 @@ public class AssetPackageManager {
 /*			String replaceMetaInfCommand = String.format("%s uvf %s %s",new String[]{jarPath,tempApkPath,metaInfPath});
 			CmdUtil.exeCmdWithLog(replaceMetaInfCommand, null, new File(TEMP_PATH));
 			System.out.println("	META-INF替换apk中的META-INF成功...");*/
-			//3.用jarsigner.jar给未签名apk签名，应为apk中文件被更新了，所以要重新签名
+			//3.用jarsigner.jar给未签名apk签名，因为apk中文件被更新了，所以要重新签名
 //			String unSignApkPath=TEMP_PATH+FILE_SEPRATOR+currentApk.getName()+".apk";
 			
 			

@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<keystore name="vas" password="pptvvas">
+    <alias name="vas.keystore" password="pptvvas"/>
+</keystore>

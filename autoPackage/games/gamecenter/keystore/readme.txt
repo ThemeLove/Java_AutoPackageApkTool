@@ -1,0 +1,3 @@
+password:gamecenterpptvvas
+alias:gamecenter.keystore
+aliasPassword:gamecenterpptvvas

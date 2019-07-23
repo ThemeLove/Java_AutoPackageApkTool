@@ -127,7 +127,7 @@ public class MyPackageFrame extends JFrame {
 	}
 	
 	/**
-	 * 初始化或者用户点击充值按钮时，重新加载数据
+	 * 初始化或者用户点击重置按钮时，重新加载数据
 	 */
 	private void refreshData(){
 		packageMethodList = model.getPackageMethods();

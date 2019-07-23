@@ -1,0 +1,3 @@
+password:yyspptvvas
+alias:yys.keystore
+aliasPassword:yyspptvvas
